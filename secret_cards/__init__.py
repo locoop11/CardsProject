@@ -6,7 +6,13 @@ from secret_cards.engine.nominate import (
     nominate_chancellor,
 )
 from secret_cards.engine.start import start_game
-from secret_cards.errors import InvalidNomineeError, InvalidPhaseError
+from secret_cards.engine.vote import cast_vote, resolve_votes
+from secret_cards.errors import (
+    InvalidNomineeError,
+    InvalidPhaseError,
+    UnknownPlayerError,
+    VoteAlreadyCastError,
+)
 from secret_cards.model import (
     Phase,
     Player,
@@ -32,12 +38,16 @@ __all__ = [
     "Role",
     "Settings",
     "Team",
+    "UnknownPlayerError",
+    "VoteAlreadyCastError",
     "assign_roles",
     "blacks_on_table",
+    "cast_vote",
     "eligible_chancellor_ids",
     "nominate_chancellor",
     "record_action",
     "reds_on_table",
+    "resolve_votes",
     "start_game",
     "team_for_role",
 ]
