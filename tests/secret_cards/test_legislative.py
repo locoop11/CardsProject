@@ -45,7 +45,7 @@ def test_president_discard_returns_card_and_leaves_two() -> None:
 def test_president_discard_rejects_unknown_card() -> None:
     state = _legislative_hand()
     with pytest.raises(InvalidCardChoiceError):
-        president_discard(state, "not-in-hand")
+        president_discard(state, 999_999)
 
 
 def test_president_discard_wrong_phase() -> None:
@@ -79,11 +79,11 @@ def test_chancellor_enact_puts_card_on_table_and_advances() -> None:
 def test_chancellor_enact_fifth_red_ends_game() -> None:
     state = _legislative_hand(seed=7)
     for n in range(1, 5):
-        state.law_table.play(make_law_card(LawColor.RED, n + 100))
+        state.law_table.play(make_law_card(LawColor.RED, n + 100, card_id=400 + n))
 
     # Force a red into the hand after discard
     president_discard(state, state.drawn_law_cards[0].id, rng=random.Random(4))
-    red = make_law_card(LawColor.RED, 200)
+    red = make_law_card(LawColor.RED, 200, card_id=499)
     state.drawn_law_cards[0] = red
 
     chancellor_enact(state, red.id, rng=random.Random(5))

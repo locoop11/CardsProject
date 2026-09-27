@@ -4,7 +4,6 @@ from enum import Enum
 
 from cards.card import Card
 
-
 LAW_DECK_BLACK_COUNT = 11
 LAW_DECK_RED_COUNT = 6
 LAW_CARD_TYPE = "law"
@@ -17,19 +16,20 @@ class LawColor(str, Enum):
     BLACK = "black"
 
 
-def make_law_card(color: LawColor, number: int) -> Card:
+def make_law_card(color: LawColor, number: int, card_id: int) -> Card:
     """
-    Build a LawCard as a generic Card with type, number, and color.
+    Build a LawCard as a generic Card with type, number, color, and int id.
 
     Args:
         color: Red or black law.
         number: Face number on this LawCard (1-based within that color).
+        card_id: Unique integer id for this physical card instance.
 
     Returns:
-        A Card with type "law", the given number and color, and a stable id.
+        A Card with type "law", the given number, color, and id.
     """
     return Card(
-        id=f"law_{color.value}_{number}",
+        id=card_id,
         type=LAW_CARD_TYPE,
         number=number,
         color=color.value,

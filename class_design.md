@@ -71,7 +71,7 @@ DeckProtocol (interface)
 
 | Class / type | Kind | Responsibility | Does NOT |
 |---|---|---|---|
-| `Card` | immutable data | `id`, `type`, `number`, `color`, optional `meta` | Know game rules |
+| `Card` | immutable data | `id` (int), `type`, `number`, `color`, optional `meta` | Know game rules |
 | `DeckProtocol` | interface | `shuffle`, `draw`, `return_and_shuffle`, `__len__`, … | Store game-specific rules |
 | `CardPile` | mutable; implements `DeckProtocol` | Ordered pile; top = index 0 | Know “law” or wins |
 
@@ -83,7 +83,7 @@ DeckProtocol (interface)
 | Class / type | Responsibility |
 |---|---|
 | `LawColor` | `RED` / `BLACK` |
-| `make_law_card(color, number) -> Card` | `type="law"`, `number` 1-based, `color` red/black |
+| `make_law_card(color, number, card_id) -> Card` | `type="law"`, `number` 1-based, `color` red/black, unique int `id` |
 | `law_color(card) -> LawColor` | Raises if not a law card |
 | `is_law_card(card) -> bool` | Guard |
 | `SecretCardsLawDeck` | Implements `DeckProtocol`; builds standard 11+6 deck; draw / discard-back / top-card draw |
@@ -199,7 +199,7 @@ SecretCardsLawDeck
 └── (implements DeckProtocol; holds ordered LawCards internally)
 
 Card
-└── id, type, number, color, meta    # no back-reference to deck/game
+└── id (int), type, number, color, meta    # no back-reference to deck/game
 ```
 
 **Rule:** `Card` never points at deck or game. Moves are remove-from-A / insert-into-B.

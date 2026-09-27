@@ -34,7 +34,7 @@ class Card:
     Generic card. Games define what type / number / color mean.
     `id` uniquely identifies this physical card instance in a deck.
     """
-    id: str
+    id: int
     type: str       # e.g. "law", "hearts"
     number: int     # face / index number (game-defined)
     color: str      # e.g. "red", "black"
@@ -70,7 +70,7 @@ class CardPile:
     ) -> None:
         """Return cards into the pile and shuffle (typical discard-back-to-deck)."""
         ...
-    def remove(self, card_ids: Sequence[str]) -> list[Card]:
+    def remove(self, card_ids: Sequence[int]) -> list[Card]:
         """Remove specific cards by id (e.g. moving from hand to table)."""
         ...
     def __len__(self) -> int: ...
@@ -113,10 +113,10 @@ class LawColor(str, Enum):
     BLACK = "black"
 
 
-def make_law_card(color: LawColor, number: int) -> Card:
-    """Factory: LawCard = Card(type="law", number=..., color=red|black)."""
+def make_law_card(color: LawColor, number: int, card_id: int) -> Card:
+    """Factory: LawCard = Card(id=int, type="law", number=..., color=red|black)."""
     return Card(
-        id=f"law_{color.value}_{number}",
+        id=card_id,
         type="law",
         number=number,
         color=color.value,

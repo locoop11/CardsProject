@@ -19,8 +19,8 @@ from secret_cards.laws.secret_cards_law_deck import SecretCardsLawDeck
 
 
 def test_make_law_card_sets_type_number_color() -> None:
-    card = make_law_card(LawColor.RED, 3)
-    assert card.id == "law_red_3"
+    card = make_law_card(LawColor.RED, 3, card_id=42)
+    assert card.id == 42
     assert card.type == LAW_CARD_TYPE
     assert card.number == 3
     assert card.color == "red"
@@ -30,7 +30,7 @@ def test_make_law_card_sets_type_number_color() -> None:
 
 def test_law_color_rejects_non_law_card() -> None:
     with pytest.raises(ValueError, match="Not a LawCard"):
-        law_color(Card(id="x", type="hearts", number=1, color="red"))
+        law_color(Card(id=1, type="hearts", number=1, color="red"))
 
 
 def test_new_standard_has_correct_composition() -> None:
@@ -40,6 +40,7 @@ def test_new_standard_has_correct_composition() -> None:
     assert deck.count_in_deck(LawColor.BLACK) == LAW_DECK_BLACK_COUNT
     assert deck.count_in_deck(LawColor.RED) == LAW_DECK_RED_COUNT
     assert all(is_law_card(c) for c in deck.cards)
+    assert sorted(c.id for c in deck.cards) == list(range(1, 18))
     black_numbers = sorted(
         c.number for c in deck.cards if c.color == LawColor.BLACK.value
     )
@@ -74,8 +75,10 @@ def test_draw_top_for_auto_enact() -> None:
 
 
 def test_count_in_deck_updates_after_draw() -> None:
-    cards = [make_law_card(LawColor.BLACK, n) for n in range(1, 4)] + [
-        make_law_card(LawColor.RED, n) for n in range(1, 3)
+    cards = [
+        make_law_card(LawColor.BLACK, n, card_id=n) for n in range(1, 4)
+    ] + [
+        make_law_card(LawColor.RED, n, card_id=10 + n) for n in range(1, 3)
     ]
     deck = SecretCardsLawDeck(cards=cards)
     deck.draw(2)  # two black

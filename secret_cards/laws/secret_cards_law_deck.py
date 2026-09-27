@@ -41,13 +41,14 @@ class SecretCardsLawDeck(CardPile):
         Returns:
             A SecretCardsLawDeck with 11 black and 6 red LawCards, shuffled.
         """
-        cards: list[Card] = [
-            make_law_card(LawColor.BLACK, n)
-            for n in range(1, cls.BLACK_COUNT + 1)
-        ] + [
-            make_law_card(LawColor.RED, n)
-            for n in range(1, cls.RED_COUNT + 1)
-        ]
+        cards: list[Card] = []
+        next_id = 1
+        for n in range(1, cls.BLACK_COUNT + 1):
+            cards.append(make_law_card(LawColor.BLACK, n, card_id=next_id))
+            next_id += 1
+        for n in range(1, cls.RED_COUNT + 1):
+            cards.append(make_law_card(LawColor.RED, n, card_id=next_id))
+            next_id += 1
         deck = cls(cards=cards)
         deck.shuffle(rng)
         return deck

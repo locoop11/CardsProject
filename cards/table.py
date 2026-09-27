@@ -51,6 +51,6 @@ class CardTable:
         """Return how many cards are currently on the table."""
         return len(self.cards)
 
-    def __contains__(self, card_id: str) -> bool:
+    def __contains__(self, card_id: int) -> bool:
         """Return True if a card with this id is on the table."""
         return any(card.id == card_id for card in self.cards)

@@ -11,7 +11,7 @@ from secret_cards.model import GameState, Phase
 
 def president_discard(
     state: GameState,
-    card_id: str,
+    card_id: int,
     rng: random.Random | None = None,
 ) -> GameState:
     """
@@ -55,7 +55,7 @@ def president_discard(
 
 def chancellor_enact(
     state: GameState,
-    card_id: str,
+    card_id: int,
     rng: random.Random | None = None,
 ) -> GameState:
     """
@@ -108,7 +108,7 @@ def chancellor_enact(
     return advance_round(state, after_auto_enact=False)
 
 
-def _take_from_hand(state: GameState, card_id: str):
+def _take_from_hand(state: GameState, card_id: int):
     for i, card in enumerate(state.drawn_law_cards):
         if card.id == card_id:
             return state.drawn_law_cards.pop(i)

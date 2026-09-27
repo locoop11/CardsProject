@@ -95,8 +95,8 @@ def test_no_eligible_nominees_enacts_top_law_and_advances() -> None:
 def test_top_enact_can_end_game_on_fifth_red() -> None:
     state = _game()
     for n in range(1, 5):
-        state.law_table.play(make_law_card(LawColor.RED, n))
-    red = make_law_card(LawColor.RED, 99)
+        state.law_table.play(make_law_card(LawColor.RED, n, card_id=200 + n))
+    red = make_law_card(LawColor.RED, 99, card_id=299)
     state.law_deck.cards.insert(0, red)
 
     president = state.players[0].id

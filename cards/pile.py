@@ -116,7 +116,7 @@ class CardPile:
         self.cards.extend(cards)
         self.shuffle(rng)
 
-    def remove(self, card_ids: Sequence[str]) -> list[Card]:
+    def remove(self, card_ids: Sequence[int]) -> list[Card]:
         """
         Remove specific cards from the pile by id and return them.
 

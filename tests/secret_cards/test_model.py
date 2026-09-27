@@ -62,9 +62,9 @@ def test_game_state_starts_in_nomination_with_full_deck() -> None:
 
 def test_enacted_counts_from_law_table() -> None:
     state = _minimal_state()
-    state.law_table.play(make_law_card(LawColor.RED, 1))
-    state.law_table.play(make_law_card(LawColor.RED, 2))
-    state.law_table.play(make_law_card(LawColor.BLACK, 1))
+    state.law_table.play(make_law_card(LawColor.RED, 1, card_id=101))
+    state.law_table.play(make_law_card(LawColor.RED, 2, card_id=102))
+    state.law_table.play(make_law_card(LawColor.BLACK, 1, card_id=103))
     assert reds_on_table(state) == 2
     assert blacks_on_table(state) == 1
 

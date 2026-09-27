@@ -11,7 +11,7 @@ from cards.protocols import DeckProtocol
 
 def _cards(*colors: str) -> list[Card]:
     return [
-        Card(id=f"c{i}", type="test", number=i + 1, color=color)
+        Card(id=i + 1, type="test", number=i + 1, color=color)
         for i, color in enumerate(colors)
     ]
 
@@ -37,7 +37,7 @@ def test_draw_more_than_available_raises() -> None:
 
 def test_peek_does_not_remove() -> None:
     pile = CardPile(cards=_cards("a", "b"))
-    assert [c.id for c in pile.peek(1)] == ["c0"]
+    assert [c.id for c in pile.peek(1)] == [1]
     assert len(pile) == 2
 
 
@@ -56,24 +56,24 @@ def test_return_and_shuffle_restores_count() -> None:
     assert len(pile) == 1
     pile.return_and_shuffle(drawn, rng=random.Random(1))
     assert len(pile) == 3
-    assert {c.id for c in pile.cards} == {"c0", "c1", "c2"}
+    assert {c.id for c in pile.cards} == {1, 2, 3}
 
 
 def test_add_top_and_bottom() -> None:
     pile = CardPile(cards=_cards("mid"))
-    pile.add_top([Card(id="top", type="test", number=9, color="t")])
-    pile.add_bottom([Card(id="bot", type="test", number=8, color="b")])
-    assert [c.id for c in pile.cards] == ["top", "c0", "bot"]
+    pile.add_top([Card(id=9, type="test", number=9, color="t")])
+    pile.add_bottom([Card(id=8, type="test", number=8, color="b")])
+    assert [c.id for c in pile.cards] == [9, 1, 8]
 
 
 def test_remove_by_ids_preserves_request_order() -> None:
     pile = CardPile(cards=_cards("a", "b", "c"))
-    removed = pile.remove(["c2", "c0"])
-    assert [c.id for c in removed] == ["c2", "c0"]
-    assert [c.id for c in pile.cards] == ["c1"]
+    removed = pile.remove([3, 1])
+    assert [c.id for c in removed] == [3, 1]
+    assert [c.id for c in pile.cards] == [2]
 
 
 def test_remove_missing_id_raises() -> None:
     pile = CardPile(cards=_cards("a"))
     with pytest.raises(PileError, match="not in pile"):
-        pile.remove(["missing"])
+        pile.remove([999])

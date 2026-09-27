@@ -100,7 +100,7 @@ def test_hitler_elected_with_three_black_wins_before_draw() -> None:
     state, nominee = _nominated_game()
     # Put three black laws on the table
     for n in range(1, 4):
-        state.law_table.play(make_law_card(LawColor.BLACK, n + 50))
+        state.law_table.play(make_law_card(LawColor.BLACK, n + 50, card_id=300 + n))
     # Make nominee Hitler
     for p in state.players:
         if p.id == nominee:
@@ -120,7 +120,7 @@ def test_hitler_elected_with_three_black_wins_before_draw() -> None:
 
 def test_hitler_elected_before_three_black_does_not_win() -> None:
     state, nominee = _nominated_game()
-    state.law_table.play(make_law_card(LawColor.BLACK, 80))
+    state.law_table.play(make_law_card(LawColor.BLACK, 80, card_id=380))
     for p in state.players:
         if p.id == nominee:
             p.role = Role.HITLER
