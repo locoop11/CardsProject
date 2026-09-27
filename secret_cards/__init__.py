@@ -1,6 +1,7 @@
 """Secret Cards game package — depends on cards/, never the reverse."""
 
 from secret_cards.actions import GameAction, record_action
+from secret_cards.engine.legislative import chancellor_enact, president_discard
 from secret_cards.engine.nominate import (
     eligible_chancellor_ids,
     nominate_chancellor,
@@ -8,6 +9,7 @@ from secret_cards.engine.nominate import (
 from secret_cards.engine.start import start_game
 from secret_cards.engine.vote import cast_vote, resolve_votes
 from secret_cards.errors import (
+    InvalidCardChoiceError,
     InvalidNomineeError,
     InvalidPhaseError,
     UnknownPlayerError,
@@ -31,6 +33,7 @@ __all__ = [
     "SUPPORTED_PLAYER_COUNTS",
     "GameAction",
     "GameState",
+    "InvalidCardChoiceError",
     "InvalidNomineeError",
     "InvalidPhaseError",
     "Phase",
@@ -43,8 +46,10 @@ __all__ = [
     "assign_roles",
     "blacks_on_table",
     "cast_vote",
+    "chancellor_enact",
     "eligible_chancellor_ids",
     "nominate_chancellor",
+    "president_discard",
     "record_action",
     "reds_on_table",
     "resolve_votes",

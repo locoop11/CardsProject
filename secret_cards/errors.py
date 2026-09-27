@@ -19,3 +19,7 @@ class VoteAlreadyCastError(EngineError):
 
 class UnknownPlayerError(EngineError):
     """Player id is not part of this game."""
+
+
+class InvalidCardChoiceError(EngineError):
+    """Chosen LawCard is not in the current legislative hand."""
