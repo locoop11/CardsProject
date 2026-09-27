@@ -115,7 +115,7 @@ Owns the **draw pile only**. Does not own enacted cards.
 Use **`CardTable`** on `GameState`. Count helpers as functions:
 
 ```text
-red_enacted(table) / black_enacted(table)  # filter by law_color
+reds_on_table(state) / blacks_on_table(state)  # filter by law_color
 ```
 
 ### Layer D — Game data

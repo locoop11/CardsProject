@@ -215,8 +215,8 @@ class GameState:
 ```
 
 **Derived counts (do not store separately if avoidable; compute from `law_table`):**
-- `red_enacted` = number of red LawCards on `law_table`
-- `black_enacted` = number of black LawCards on `law_table`
+- `reds_on_table` = number of red LawCards on `law_table`
+- `blacks_on_table` = number of black LawCards on `law_table`
 
 **LawCards deck behavior in this game**
 - Start: `SecretCardsLawDeck.new_standard(rng)` (11 black + 6 red).
@@ -398,8 +398,8 @@ result = {
     "players": [
         {"name": str, "role": Role, "team": Team}
     ],
-    "red_enacted": int,   # count of red LawCards on law_table
-    "black_enacted": int, # count of black LawCards on law_table
+    "reds_on_table": int,   # count of red LawCards on law_table
+    "blacks_on_table": int, # count of black LawCards on law_table
 }
 ```
 

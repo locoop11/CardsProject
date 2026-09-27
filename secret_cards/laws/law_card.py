@@ -4,6 +4,7 @@ from enum import Enum
 
 from cards.card import Card
 
+
 LAW_DECK_BLACK_COUNT = 11
 LAW_DECK_RED_COUNT = 6
 LAW_CARD_TYPE = "law"
