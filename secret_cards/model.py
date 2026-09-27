@@ -12,18 +12,18 @@ from secret_cards.laws.secret_cards_law_deck import SecretCardsLawDeck
 
 
 class Team(str, Enum):
-    """Winning / affiliation side."""
+    """Winning / affiliation side (players). LawCards stay red/black by color."""
 
-    RED = "red"
-    BLACK = "black"
+    COMMUNIST = "communist"
+    FASCIST = "fascist"
 
 
 class Role(str, Enum):
     """Secret role assigned once at game start."""
 
-    RED_MEMBER = "red_member"
-    BLACK_MEMBER = "black_member"
-    LEADER = "leader"  # team = BLACK
+    COMMUNIST = "communist"
+    FASCIST = "fascist"
+    HITLER = "hitler"  # team = FASCIST
 
 
 class Phase(str, Enum):
@@ -95,11 +95,11 @@ def team_for_role(role: Role) -> Team:
     """
     Map a role to its team.
 
-    Red members are Red; black members and the Leader are Black.
+    Communists are Team.COMMUNIST; Fascists and Hitler are Team.FASCIST.
     """
-    if role is Role.RED_MEMBER:
-        return Team.RED
-    return Team.BLACK
+    if role is Role.COMMUNIST:
+        return Team.COMMUNIST
+    return Team.FASCIST
 
 
 def reds_on_table(state: GameState) -> int:

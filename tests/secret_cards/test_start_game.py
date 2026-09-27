@@ -17,12 +17,12 @@ from secret_cards.roles import (
 @pytest.mark.parametrize("player_count", SUPPORTED_PLAYER_COUNTS)
 def test_assign_roles_matches_distribution_table(player_count: int) -> None:
     roles = assign_roles(player_count, rng=random.Random(player_count))
-    red_count, black_including_leader = ROLE_DISTRIBUTION[player_count]
+    communist_count, fascist_including_hitler = ROLE_DISTRIBUTION[player_count]
     counts = Counter(roles)
     assert len(roles) == player_count
-    assert counts[Role.LEADER] == 1
-    assert counts[Role.RED_MEMBER] == red_count
-    assert counts[Role.BLACK_MEMBER] == black_including_leader - 1
+    assert counts[Role.HITLER] == 1
+    assert counts[Role.COMMUNIST] == communist_count
+    assert counts[Role.FASCIST] == fascist_including_hitler - 1
 
 
 def test_assign_roles_rejects_unsupported_count() -> None:
@@ -53,10 +53,10 @@ def test_start_game_builds_valid_initial_state() -> None:
     assert state.action_log[0].type == "start_game"
 
     counts = Counter(p.role for p in state.players)
-    assert counts[Role.LEADER] == 1
-    assert counts[Role.RED_MEMBER] == 3
-    assert counts[Role.BLACK_MEMBER] == 1
-    assert team_for_role(Role.LEADER) is Team.BLACK
+    assert counts[Role.HITLER] == 1
+    assert counts[Role.COMMUNIST] == 3
+    assert counts[Role.FASCIST] == 1
+    assert team_for_role(Role.HITLER) is Team.FASCIST
 
 
 def test_start_game_rejects_unsupported_player_count() -> None:

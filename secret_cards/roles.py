@@ -4,7 +4,7 @@ import random
 
 from secret_cards.model import Role
 
-# player_count -> (red_member_count, black_count_including_leader)
+# player_count -> (communist_count, fascist_count_including_hitler)
 ROLE_DISTRIBUTION: dict[int, tuple[int, int]] = {
     5: (3, 2),
     6: (4, 2),
@@ -23,8 +23,8 @@ def assign_roles(
     """
     Build a shuffled list of roles for the given player count.
 
-    Exactly one LEADER; remaining black seats are BLACK_MEMBER; the rest
-    are RED_MEMBER. Counts come from ROLE_DISTRIBUTION.
+    Exactly one HITLER; remaining fascist seats are FASCIST; the rest are
+    COMMUNIST. Counts come from ROLE_DISTRIBUTION.
 
     Args:
         player_count: Must be in SUPPORTED_PLAYER_COUNTS.
@@ -41,12 +41,12 @@ def assign_roles(
             f"Unsupported player_count={player_count}; "
             f"supported={SUPPORTED_PLAYER_COUNTS}"
         )
-    red_count, black_including_leader = ROLE_DISTRIBUTION[player_count]
-    black_members = black_including_leader - 1
+    communist_count, fascist_including_hitler = ROLE_DISTRIBUTION[player_count]
+    fascist_members = fascist_including_hitler - 1
     roles: list[Role] = (
-        [Role.RED_MEMBER] * red_count
-        + [Role.BLACK_MEMBER] * black_members
-        + [Role.LEADER]
+        [Role.COMMUNIST] * communist_count
+        + [Role.FASCIST] * fascist_members
+        + [Role.HITLER]
     )
     assert len(roles) == player_count
     shuffler = rng if rng is not None else random

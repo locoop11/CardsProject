@@ -21,11 +21,11 @@ from secret_cards.model import (
 
 def _minimal_state() -> GameState:
     players = [
-        Player(id="p1", name="Alice", role=Role.RED_MEMBER),
-        Player(id="p2", name="Bob", role=Role.BLACK_MEMBER),
-        Player(id="p3", name="Cara", role=Role.LEADER),
-        Player(id="p4", name="Dan", role=Role.RED_MEMBER),
-        Player(id="p5", name="Eve", role=Role.RED_MEMBER),
+        Player(id="p1", name="Alice", role=Role.COMMUNIST),
+        Player(id="p2", name="Bob", role=Role.FASCIST),
+        Player(id="p3", name="Cara", role=Role.HITLER),
+        Player(id="p4", name="Dan", role=Role.COMMUNIST),
+        Player(id="p5", name="Eve", role=Role.COMMUNIST),
     ]
     return GameState(
         players=players,
@@ -46,9 +46,9 @@ def _minimal_state() -> GameState:
 
 
 def test_team_for_role() -> None:
-    assert team_for_role(Role.RED_MEMBER) is Team.RED
-    assert team_for_role(Role.BLACK_MEMBER) is Team.BLACK
-    assert team_for_role(Role.LEADER) is Team.BLACK
+    assert team_for_role(Role.COMMUNIST) is Team.COMMUNIST
+    assert team_for_role(Role.FASCIST) is Team.FASCIST
+    assert team_for_role(Role.HITLER) is Team.FASCIST
 
 
 def test_game_state_starts_in_nomination_with_full_deck() -> None:

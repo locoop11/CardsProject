@@ -148,14 +148,14 @@ from typing import Optional
 
 
 class Team(str, Enum):
-    RED = "red"
-    BLACK = "black"
+    COMMUNIST = "communist"
+    FASCIST = "fascist"
 
 
 class Role(str, Enum):
-    RED_MEMBER = "red_member"
-    BLACK_MEMBER = "black_member"
-    LEADER = "leader"  # team = BLACK
+    COMMUNIST = "communist"
+    FASCIST = "fascist"
+    HITLER = "hitler"  # team = FASCIST
 
 
 class Phase(str, Enum):
@@ -209,7 +209,7 @@ class GameState:
     drawn_law_cards: list[Card]   # legislative hand — full Card objects for UI visuals
 
     winner: Optional[Team]
-    win_reason: Optional[str]  # "red_laws" | "black_laws" | "leader_elected"
+    win_reason: Optional[str]  # "communist_laws" | "fascist_laws" | "hitler_elected"
     result: Optional[dict]  # see Task 2.6 — set only when phase == GAME_OVER
     action_log: list  # append-only GameAction records; future replay/persistence
 ```
@@ -232,8 +232,9 @@ class GameState:
 ## Locked rules summary (v1)
 
 ### Roles / teams
-- Red members vs Black members; exactly one **Leader** on Black.
+- Communists vs Fascists; exactly one **Hitler** on the Fascist team.
 - Role assignment only at game start.
+- LawCards stay **red** / **black** by color (red ↔ Communist win track, black ↔ Fascist win track).
 
 ### Presidency & rounds
 - **Presidency does not rotate on a failed vote.** The same president nominates another eligible person.
@@ -266,8 +267,8 @@ A player may be nominated if they are **not**:
 - This path is normal and expected, not an error case. The game must never soft-lock waiting for a vote to pass.
 
 ### Win conditions (instant; check at the points below)
-1. **After every successful election** (before drawing LawCards): if black LawCards on table `>= 3` and the elected chancellor’s role is `LEADER` → Black wins (`leader_elected`).
-2. **After every LawCard enactment** (legislative or top-of-deck): if red on table `>= 5` → Red (`red_laws`); if black on table `>= 6` → Black (`black_laws`).
+1. **After every successful election** (before drawing LawCards): if black LawCards on table `>= 3` and the elected chancellor’s role is `HITLER` → Fascists win (`hitler_elected`).
+2. **After every LawCard enactment** (legislative or top-of-deck): if red on table `>= 5` → Communists (`communist_laws`); if black on table `>= 6` → Fascists (`fascist_laws`).
 
 ---
 
@@ -278,19 +279,19 @@ Implement §0.1 as its own module/package (e.g. `cards/`), with no dependency on
 
 ### Task 1.1 — Role distribution table
 
-| Player count | Red members | Black members (incl. Leader) |
-|-------------:|------------:|-----------------------------:|
-| 5 | 3 | 2 (1 + Leader) |
-| 6 | 4 | 2 (1 + Leader) |
-| 7 | 4 | 3 (2 + Leader) |
-| 8 | 5 | 3 (2 + Leader) |
-| 9 | 5 | 4 (3 + Leader) |
-| 10 | 6 | 4 (3 + Leader) |
+| Player count | Communists | Fascists (incl. Hitler) |
+|-------------:|-----------:|------------------------:|
+| 5 | 3 | 2 (1 + Hitler) |
+| 6 | 4 | 2 (1 + Hitler) |
+| 7 | 4 | 3 (2 + Hitler) |
+| 8 | 5 | 3 (2 + Hitler) |
+| 9 | 5 | 4 (3 + Hitler) |
+| 10 | 6 | 4 (3 + Hitler) |
 
 **Acceptance criteria**
-- `ROLE_DISTRIBUTION: dict[int, tuple[int, int]]` → `(red_count, black_count_including_leader)`.
+- `ROLE_DISTRIBUTION: dict[int, tuple[int, int]]` → `(communist_count, fascist_count_including_hitler)`.
 - `SUPPORTED_PLAYER_COUNTS = tuple(ROLE_DISTRIBUTION.keys())`.
-- `assign_roles(player_count: int) -> list[Role]`: shuffled list of exactly `player_count` roles (exactly one `LEADER`, rest split); `ValueError` if count unsupported.
+- `assign_roles(player_count: int) -> list[Role]`: shuffled list of exactly `player_count` roles (exactly one `HITLER`, rest split); `ValueError` if count unsupported.
 
 ### Task 1.2 — Round-flow flowchart
 
@@ -361,10 +362,10 @@ Each public engine action should append a serializable entry to `state.action_lo
 - First vote is final — **no overwrites**.
 - Missing votes at resolve → **Nein**.
 - Approve iff `ja_count > nein_count`.
-- **Approved:** set `chancellor_id`; Leader-elected win check **before** drawing LawCards; if no win, `law_deck.draw(3)` → `LEGISLATIVE_PRESIDENT`.
+- **Approved:** set `chancellor_id`; Hitler-elected win check **before** drawing LawCards; if no win, `law_deck.draw(3)` → `LEGISLATIVE_PRESIDENT`.
 - **Rejected:** append nominee to `rejected_nominee_ids`; clear nomination/votes; → `NOMINATION` (same president). If no eligible nominees left → top-of-deck enact (vote never needed to pass).
 
-**Tests:** majority Ja; tie = reject; vote lock; missing → Nein; chain of rejects until none eligible → top LawCard enacted; Leader-elected before any draw.
+**Tests:** majority Ja; tie = reject; vote lock; missing → Nein; chain of rejects until none eligible → top LawCard enacted; Hitler-elected before any draw.
 
 ### Task 2.4 — Drawing & enacting LawCards
 
@@ -380,11 +381,11 @@ Uses the generic cards system:
 
 `check_win_condition(state: GameState) -> Optional[tuple[Team, str]]`
 
-1. After successful election, before draw: black on table `>= 3` and chancellor is `LEADER` → `(BLACK, "leader_elected")`.
-2. After enactment: red on table `>= 5` → `(RED, "red_laws")`; black on table `>= 6` → `(BLACK, "black_laws")`.
+1. After successful election, before draw: black on table `>= 3` and chancellor is `HITLER` → `(FASCIST, "hitler_elected")`.
+2. After enactment: red on table `>= 5` → `(COMMUNIST, "communist_laws")`; black on table `>= 6` → `(FASCIST, "fascist_laws")`.
 3. Else `None`.
 
-**Tests:** each path; electing Leader before 3 black LawCards on the table does **not** win.
+**Tests:** each path; electing Hitler before 3 black LawCards on the table does **not** win.
 
 ### Task 2.6 — End-of-game result object
 
