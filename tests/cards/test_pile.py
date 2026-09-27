@@ -9,8 +9,11 @@ from cards.pile import CardPile, PileError
 from cards.protocols import DeckProtocol
 
 
-def _cards(*kinds: str) -> list[Card]:
-    return [Card(id=f"c{i}", kind=kind) for i, kind in enumerate(kinds)]
+def _cards(*colors: str) -> list[Card]:
+    return [
+        Card(id=f"c{i}", type="test", number=i + 1, color=color)
+        for i, color in enumerate(colors)
+    ]
 
 
 def test_card_pile_satisfies_deck_protocol() -> None:
@@ -21,8 +24,8 @@ def test_card_pile_satisfies_deck_protocol() -> None:
 def test_draw_takes_from_top_in_order() -> None:
     pile = CardPile(cards=_cards("red", "black", "red"))
     drawn = pile.draw(2)
-    assert [c.kind for c in drawn] == ["red", "black"]
-    assert [c.kind for c in pile.cards] == ["red"]
+    assert [c.color for c in drawn] == ["red", "black"]
+    assert [c.color for c in pile.cards] == ["red"]
     assert len(pile) == 1
 
 
@@ -58,8 +61,8 @@ def test_return_and_shuffle_restores_count() -> None:
 
 def test_add_top_and_bottom() -> None:
     pile = CardPile(cards=_cards("mid"))
-    pile.add_top([Card(id="top", kind="t")])
-    pile.add_bottom([Card(id="bot", kind="b")])
+    pile.add_top([Card(id="top", type="test", number=9, color="t")])
+    pile.add_bottom([Card(id="bot", type="test", number=8, color="b")])
     assert [c.id for c in pile.cards] == ["top", "c0", "bot"]
 
 

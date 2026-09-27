@@ -31,12 +31,13 @@ import random
 @dataclass(frozen=True)
 class Card:
     """
-    Generic card. `kind` is an opaque string defined by the consuming game
-    (e.g. "law_red", "law_black", or later "hearts_ace", "item_sword", …).
+    Generic card. Games define what type / number / color mean.
     `id` uniquely identifies this physical card instance in a deck.
     """
     id: str
-    kind: str
+    type: str       # e.g. "law", "hearts"
+    number: int     # face / index number (game-defined)
+    color: str      # e.g. "red", "black"
     # Optional free-form metadata for future games; unused by core pile logic.
     meta: dict = field(default_factory=dict)
 
@@ -112,9 +113,14 @@ class LawColor(str, Enum):
     BLACK = "black"
 
 
-def make_law_card(color: LawColor, index: int) -> Card:
-    """Factory: a LawCard is a generic Card with kind 'law_red' or 'law_black'."""
-    return Card(id=f"law_{color.value}_{index}", kind=f"law_{color.value}")
+def make_law_card(color: LawColor, number: int) -> Card:
+    """Factory: LawCard = Card(type="law", number=..., color=red|black)."""
+    return Card(
+        id=f"law_{color.value}_{number}",
+        type="law",
+        number=number,
+        color=color.value,
+    )
 
 
 def is_law_card(card: Card) -> bool: ...
@@ -490,7 +496,7 @@ Manual: real playtests, log edge cases, visual polish. Not code-precise.
 | Law deck class | **`SecretCardsLawDeck`** |
 | Enacted area | Plain **`CardTable`** (no `LawTable`) |
 | GameState updates | **Mutate in place**; append to **`action_log`** for future replay/storage |
-| UI hands | **Full Card visual** (id + kind), not color-only tokens |
+| UI hands | **Full Card visual** (id + type + number + color), not color-only tokens |
 | Shuffle (v1) | `random.shuffle` / injectable `rng` — **not** cryptographically secure |
 | Shuffle (future) | Upgrade default to full/OS randomness (`secrets.SystemRandom` or equivalent) for online fairness; keep injectable `rng` for tests |
 | Failed vote | Same president nominates again |

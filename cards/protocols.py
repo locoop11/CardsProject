@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import random
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, runtime_checkable
 
 from cards.card import Card
 
 
+@runtime_checkable
 class DeckProtocol(Protocol):
     """
     Interface for any draw pile.

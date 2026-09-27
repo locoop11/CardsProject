@@ -10,11 +10,14 @@ class Card:
 
     Attributes:
         id: Unique id for this card instance within a deck (stable for the game).
-        kind: Opaque type string defined by the consuming game
-            (e.g. "law_red", "law_black", or later other games' kinds).
+        type: Card type defined by the consuming game (e.g. "law", "hearts").
+        number: Face / index number on the card (meaning is game-defined).
+        color: Color label defined by the consuming game (e.g. "red", "black").
         meta: Optional free-form metadata for future games; unused by pile logic.
     """
 
     id: str
-    kind: str
+    type: str
+    number: int
+    color: str
     meta: dict = field(default_factory=dict)
