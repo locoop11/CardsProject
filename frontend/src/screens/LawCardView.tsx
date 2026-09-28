@@ -1,4 +1,5 @@
 import type { LawCardModel } from '../lawCards'
+import { PlayingCardFace } from './PlayingCardFace'
 
 type Props = {
   card: LawCardModel
@@ -25,33 +26,35 @@ export function LawCardView({
     .filter(Boolean)
     .join(' ')
 
+  const label = faceDown
+    ? 'Face-down LawCard'
+    : `${card.color} LawCard ${card.number}`
+
+  const face = (
+    <PlayingCardFace
+      color={card.color}
+      number={card.number}
+      faceDown={faceDown}
+    />
+  )
+
   if (interactive) {
     return (
       <button
         type="button"
         className={className}
         aria-pressed={selected}
+        aria-label={label}
         onClick={onSelect}
       >
-        <span className="law-card-kind">Law</span>
-        <span className="law-card-number">{card.number}</span>
-        <span className="law-card-color">{card.color}</span>
+        {face}
       </button>
     )
   }
 
   return (
-    <div
-      className={className}
-      aria-label={
-        faceDown
-          ? 'Face-down LawCard'
-          : `${card.color} LawCard ${card.number}`
-      }
-    >
-      <span className="law-card-kind">Law</span>
-      <span className="law-card-number">{card.number}</span>
-      <span className="law-card-color">{card.color}</span>
+    <div className={className} aria-label={label}>
+      {face}
     </div>
   )
 }

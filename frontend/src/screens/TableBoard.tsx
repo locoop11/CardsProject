@@ -1,4 +1,5 @@
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
+import { PlayingCardFace } from './PlayingCardFace'
 
 type VoteBorder = 'ja' | 'nein'
 
@@ -91,9 +92,15 @@ export function TableBoard({
                 disabled={!deckEnabled || !onDeckTap}
                 onClick={onDeckTap}
               >
-                <span className="deck-pile-card" aria-hidden="true" />
-                <span className="deck-pile-card" aria-hidden="true" />
-                <span className="deck-pile-card" aria-hidden="true" />
+                <span className="deck-pile-card" aria-hidden="true">
+                  <PlayingCardFace color="black" number={1} faceDown />
+                </span>
+                <span className="deck-pile-card" aria-hidden="true">
+                  <PlayingCardFace color="black" number={1} faceDown />
+                </span>
+                <span className="deck-pile-card" aria-hidden="true">
+                  <PlayingCardFace color="black" number={1} faceDown />
+                </span>
               </button>
             )}
             <p
@@ -125,7 +132,11 @@ export function TableBoard({
                       ? 'table-law-slot filled red'
                       : 'table-law-slot'
                   }
-                />
+                >
+                  {i < redsOnTable && (
+                    <PlayingCardFace color="red" number={i + 1} />
+                  )}
+                </span>
               ))}
             </div>
           </div>
@@ -143,7 +154,11 @@ export function TableBoard({
                       ? 'table-law-slot filled black'
                       : 'table-law-slot'
                   }
-                />
+                >
+                  {i < blacksOnTable && (
+                    <PlayingCardFace color="black" number={i + 1} />
+                  )}
+                </span>
               ))}
             </div>
           </div>

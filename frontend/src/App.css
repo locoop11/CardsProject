@@ -419,18 +419,17 @@ body {
 }
 
 .law-card {
-  width: 6.5rem;
-  min-height: 9.25rem;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 0.5rem;
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  width: 6.6rem;
+  height: 9.4rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  display: block;
 }
 
 .law-card.interactive {
@@ -439,38 +438,22 @@ body {
 
 .law-card.selected {
   outline: 3px solid var(--ring);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.law-card-red {
-  background: linear-gradient(160deg, #c4293d 0%, #7d1524 100%);
-  color: #fff;
-  border-color: #5c1019;
+.law-card-red,
+.law-card-black,
+.law-card.face-down {
+  background: transparent;
+  border: none;
+  color: inherit;
 }
 
-.law-card-black {
-  background: linear-gradient(160deg, #2c3640 0%, #1a1f26 100%);
-  color: #f2f4f6;
-  border-color: #0d1014;
-}
-
-.law-card-kind {
-  font-size: 0.7rem;
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.law-card-number {
-  font-family: var(--font-display);
-  font-size: 2.25rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.law-card-color {
-  font-size: 0.7rem;
-  font-weight: 600;
-  opacity: 0.9;
+.playing-card-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
 
 /* --- Felt table board (pass-and-play public view) --- */
@@ -602,14 +585,10 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.65);
-  background:
-    repeating-linear-gradient(
-      -18deg,
-      #1e2a36 0 3px,
-      #243242 3px 6px
-    );
+  overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  background: transparent;
+  border: none;
 }
 
 .deck-pile-card:nth-child(1) {
@@ -666,23 +645,26 @@ body {
 }
 
 .table-law-slot {
-  width: 1.55rem;
-  height: 2.2rem;
-  border-radius: 4px;
+  width: 1.7rem;
+  height: 2.4rem;
+  border-radius: 3px;
   border: 1.5px solid rgba(255, 255, 255, 0.45);
   background: transparent;
+  overflow: hidden;
+  display: block;
+  box-shadow: none;
 }
 
-.table-law-slot.filled.red {
-  background: linear-gradient(165deg, #d64557, #8e1a2b);
-  border-color: rgba(255, 220, 220, 0.55);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-
+.table-law-slot.filled.red,
 .table-law-slot.filled.black {
-  background: linear-gradient(165deg, #3a4450, #12161c);
-  border-color: rgba(220, 220, 230, 0.4);
+  border-color: rgba(255, 255, 255, 0.7);
+  background: transparent;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.table-law-slot .playing-card-svg {
+  width: 100%;
+  height: 100%;
 }
 
 .table-seats {
@@ -870,8 +852,8 @@ button.table-seat:disabled {
   }
 
   .table-law-slot {
-    width: 1.75rem;
-    height: 2.5rem;
+    width: 1.9rem;
+    height: 2.7rem;
   }
 }
 
@@ -994,20 +976,7 @@ button.table-seat:disabled {
 }
 
 .law-card.face-down {
-  background:
-    repeating-linear-gradient(
-      -18deg,
-      #1e2a36 0 4px,
-      #243242 4px 8px
-    );
-  color: rgba(255, 255, 255, 0.55);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
-.law-card.face-down .law-card-kind,
-.law-card.face-down .law-card-number,
-.law-card.face-down .law-card-color {
-  visibility: hidden;
+  background: transparent;
 }
 
 .table-layout-warning {
