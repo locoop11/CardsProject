@@ -754,6 +754,29 @@ button.table-seat:disabled {
     );
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.seat-role-card.is-revealed {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.75);
+  animation: role-flip-in 0.55s ease-out both;
+}
+
+.seat-role-card .playing-card-svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes role-flip-in {
+  from {
+    transform: rotateY(90deg);
+    opacity: 0.35;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
 }
 
 .seat-name-card {
@@ -990,45 +1013,64 @@ button.table-seat:disabled {
   text-align: center;
 }
 
-/* Win screen keeps a compact table + role list below */
+/* Win screen: full table with role cards face up */
 .screen.table-layout.win-screen {
-  min-height: auto;
-  gap: 0.9rem;
-  padding: 0.75rem 0.55rem 1.5rem;
+  min-height: 100dvh;
+  gap: 0;
+  padding: 0;
 }
 
 .screen.table-layout.win-screen > .screen-header {
-  position: static;
-  transform: none;
-  pointer-events: auto;
-  align-items: flex-start;
-  text-align: left;
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  gap: 0.1rem;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
 }
 
 .screen.table-layout.win-screen > .screen-header .brand {
-  font-size: 1.75rem;
-  color: var(--ink);
-  text-shadow: none;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 .screen.table-layout.win-screen > .screen-header h1 {
-  font-size: 1.05rem;
-  color: var(--ink-muted);
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.screen.table-layout.win-screen > .screen-header .lede {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 16rem;
 }
 
 .screen.table-layout.win-screen .table-board {
-  min-height: unset;
-  flex: none;
+  min-height: 100dvh;
+  flex: 1;
 }
 
 .screen.table-layout.win-screen .table-felt {
-  min-height: unset;
-  height: min(48dvh, 22rem);
-  border-radius: 1rem;
+  min-height: 100dvh;
+  height: auto;
+  border-radius: 0;
+}
+
+.screen.table-layout.win-screen > .screen-actions {
+  position: fixed;
+  left: 50%;
+  bottom: 1.1rem;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: min(16rem, calc(100% - 2rem));
 }
 
 #root:has(.win-screen) {
-  padding: 0.75rem 0.55rem 1.25rem;
+  padding: 0;
   min-height: 100%;
-  align-items: flex-start;
+  align-items: stretch;
 }

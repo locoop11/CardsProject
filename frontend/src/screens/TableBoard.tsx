@@ -1,5 +1,6 @@
 import type { LawCardDto } from '../api/types'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
+import { roleLabel, roleToPlayingCard, type Role } from '../roles'
 import { PlayingCardFace } from './PlayingCardFace'
 
 type VoteBorder = 'ja' | 'nein'
@@ -22,6 +23,8 @@ type Props = {
   tappableSeatIds?: string[]
   selectedSeatId?: string | null
   eligibleHighlightIds?: string[]
+  /** Flip seat role cards face-up (win reveal). */
+  revealRoles?: boolean
 }
 
 /** Place seats evenly around a rounded-rectangle perimeter (phone-friendly). */
@@ -74,6 +77,7 @@ export function TableBoard({
   tappableSeatIds,
   selectedSeatId = null,
   eligibleHighlightIds,
+  revealRoles = false,
 }: Props) {
   const rejected = new Set(rejectedIds)
   const tappable = new Set(tappableSeatIds ?? [])
@@ -82,6 +86,27 @@ export function TableBoard({
   const redLaws = lawsOnTable.filter((c) => c.color === 'red')
   const blackLaws = lawsOnTable.filter((c) => c.color === 'black')
 
+  const roleCardById = new Map<
+    string,
+    { color: 'red' | 'black'; number: number }
+  >()
+  if (revealRoles) {
+    const fascistIndex = { n: 0 }
+    const communistIndex = { n: 0 }
+    for (const player of players) {
+      const role = player.role as Role | undefined
+      if (!role) continue
+      let same = 0
+      if (role === 'fascist') {
+        same = fascistIndex.n
+        fascistIndex.n += 1
+      } else if (role === 'communist') {
+        same = communistIndex.n
+        communistIndex.n += 1
+      }
+      roleCardById.set(player.id, roleToPlayingCard(role, same))
+    }
+  }
   return (
     <section
       className="table-board"
@@ -207,17 +232,48 @@ export function TableBoard({
             const content = (
               <>
                 <div
-                  className="seat-role-card"
-                  aria-hidden="true"
-                  title="Role (hidden)"
-                />
+                  className={
+                    revealRoles && roleCardById.has(player.id)
+                      ? 'seat-role-card is-revealed'
+                      : 'seat-role-card'
+                  }
+                  aria-hidden={!revealRoles}
+                  title={
+                    revealRoles && player.role
+                      ? roleLabel(player.role)
+                      : 'Role (hidden)'
+                  }
+                >
+                  {revealRoles && roleCardById.has(player.id) && (
+                    <PlayingCardFace
+                      color={roleCardById.get(player.id)!.color}
+                      number={roleCardById.get(player.id)!.number}
+                    />
+                  )}
+                </div>
                 <div className="seat-name-card">
                   <span className="seat-name">{player.name}</span>
-                  {isPresident && (
-                    <span className="seat-office">President</span>
-                  )}
-                  {rejected.has(player.id) && !isPresident && !revealingVotes && (
-                    <span className="seat-office muted">Rejected</span>
+                  {revealRoles && player.role ? (
+                    <span
+                      className={
+                        player.role === 'communist'
+                          ? 'seat-office muted'
+                          : 'seat-office'
+                      }
+                    >
+                      {roleLabel(player.role)}
+                    </span>
+                  ) : (
+                    <>
+                      {isPresident && (
+                        <span className="seat-office">President</span>
+                      )}
+                      {rejected.has(player.id) &&
+                        !isPresident &&
+                        !revealingVotes && (
+                          <span className="seat-office muted">Rejected</span>
+                        )}
+                    </>
                   )}
                 </div>
               </>

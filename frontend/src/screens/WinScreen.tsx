@@ -1,5 +1,10 @@
-import { president, type GameSession, type WinResult } from '../gameSession'
-import { teamLabel } from '../roles'
+import {
+  president,
+  type GameSession,
+  type TablePlayer,
+  type WinResult,
+} from '../gameSession'
+import { teamLabel, type Role, type Team } from '../roles'
 import { TableBoard } from './TableBoard'
 
 type Props = {
@@ -16,14 +21,15 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         ? '6 black LawCards enacted'
         : 'Hitler elected chancellor'
 
-  const roleRows =
-    win.players.length > 0
-      ? win.players
-      : session.players.map((p) => ({
-          name: p.name,
-          role: p.role ?? 'communist',
-          team: p.team ?? 'communist',
-        }))
+  // Prefer roles kept on the session; fall back to win result by seat order.
+  const players: TablePlayer[] = session.players.map((p, i) => {
+    const fromWin = win.players[i]
+    return {
+      ...p,
+      role: (p.role ?? fromWin?.role) as Role | undefined,
+      team: (p.team ?? fromWin?.team) as Team | undefined,
+    }
+  })
 
   return (
     <main className="screen table-layout win-screen">
@@ -34,34 +40,21 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
           <strong className={`team-${win.winner}`}>
             {teamLabel(win.winner)}
           </strong>{' '}
-          win — {reasonLabel}.
+          win — {reasonLabel}. Roles are face up on the table.
         </p>
       </header>
 
       <TableBoard
-        players={session.players}
+        players={players}
         presidentId={president(session).id}
-        rejectedIds={session.rejectedIds}
-        previousChancellorId={session.previousChancellorId}
+        rejectedIds={[]}
+        previousChancellorId={null}
         redsOnTable={session.redsOnTable}
         blacksOnTable={session.blacksOnTable}
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
+        revealRoles
       />
-
-      <section className="settings-block">
-        <h2>Roles</h2>
-        <ul className="vote-list">
-          {roleRows.map((p) => (
-            <li key={p.name}>
-              <span>{p.name}</span>
-              <strong>
-                {p.role} · {p.team}
-              </strong>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <footer className="screen-actions">
         <button type="button" className="btn primary" onClick={onPlayAgain}>
