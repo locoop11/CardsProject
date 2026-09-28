@@ -10,6 +10,7 @@ import {
   type GameSession,
   type WinResult,
 } from '../gameSession'
+import { ConfirmOverlay } from './ConfirmOverlay'
 import { TableBoard } from './TableBoard'
 
 type Phase = 'nominate' | 'voting' | 'reveal' | 'topEnactNotice'
@@ -37,6 +38,8 @@ export function NominationScreen({
 }: Props) {
   const [phase, setPhase] = useState<Phase>('nominate')
   const [nomineeId, setNomineeId] = useState<string | null>(null)
+  const [pendingNomineeId, setPendingNomineeId] = useState<string | null>(null)
+  const [pendingDrawConfirm, setPendingDrawConfirm] = useState(false)
   const [votes, setVotes] = useState<Record<string, boolean>>({})
   const [secondsLeft, setSecondsLeft] = useState(SECONDS_PER_VOTER)
   const [lockedReveal, setLockedReveal] = useState<Record<
@@ -51,10 +54,14 @@ export function NominationScreen({
   const [pendingWin, setPendingWin] = useState<WinResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingVote, setPendingVote] = useState<boolean | null>(null)
+  const [confirmVoteOpen, setConfirmVoteOpen] = useState(false)
   const resolvedRef = useRef(false)
   const topEnactLock = useRef(false)
   const votesRef = useRef(votes)
   const castOnServer = useRef(new Set<string>())
+  const timerPausedRef = useRef(false)
+  const remainingMsRef = useRef(SECONDS_PER_VOTER * 1000)
   votesRef.current = votes
 
   const eligible = session.eligibleIds
@@ -79,7 +86,11 @@ export function NominationScreen({
       }
       const action = await resolveVotes(session.gameId)
       setLastAction(action)
-      setLockedReveal(action.votes ?? currentVotes)
+      const revealVotes =
+        action.votes && Object.keys(action.votes).length > 0
+          ? action.votes
+          : currentVotes
+      setLockedReveal(revealVotes)
       onSessionChange(mergeView(session, action.view))
 
       const approved = isApprovedResult(action)
@@ -136,33 +147,52 @@ export function NominationScreen({
 
   useEffect(() => {
     if (phase !== 'voting' || !currentVoter) return
+    remainingMsRef.current = SECONDS_PER_VOTER * 1000
     setSecondsLeft(SECONDS_PER_VOTER)
+    timerPausedRef.current = false
+    setPendingVote(null)
+    setConfirmVoteOpen(false)
     const voterId = currentVoter.id
-    const started = Date.now()
+    let lastTick = Date.now()
     const id = window.setInterval(() => {
-      const elapsed = Math.floor((Date.now() - started) / 1000)
-      const left = Math.max(0, SECONDS_PER_VOTER - elapsed)
+      const now = Date.now()
+      if (timerPausedRef.current) {
+        lastTick = now
+        return
+      }
+      const delta = now - lastTick
+      lastTick = now
+      remainingMsRef.current = Math.max(0, remainingMsRef.current - delta)
+      const left = Math.ceil(remainingMsRef.current / 1000)
       setSecondsLeft(left)
-      if (left === 0) {
+      if (remainingMsRef.current <= 0) {
         window.clearInterval(id)
         if (resolvedRef.current) return
         if (votesRef.current[voterId] !== undefined) return
         const next = { ...votesRef.current, [voterId]: false }
         votesRef.current = next
         setVotes(next)
+        setPendingVote(null)
+        setConfirmVoteOpen(false)
         if (Object.keys(next).length === session.players.length) {
           void finishVotingRef.current(next)
         }
       }
-    }, 200)
+    }, 100)
     return () => window.clearInterval(id)
   }, [phase, currentVoter?.id, session.players.length])
+
+  useEffect(() => {
+    timerPausedRef.current = confirmVoteOpen
+  }, [confirmVoteOpen])
 
   async function castVoteLocal(playerId: string, ja: boolean) {
     if (votes[playerId] !== undefined || resolvedRef.current || busy) return
     const next = { ...votes, [playerId]: ja }
     setVotes(next)
     votesRef.current = next
+    setPendingVote(null)
+    setConfirmVoteOpen(false)
     try {
       await apiCastVote(session.gameId, playerId, ja)
       castOnServer.current.add(playerId)
@@ -175,13 +205,15 @@ export function NominationScreen({
     }
   }
 
-  async function startVote() {
-    if (!nomineeId || busy) return
+  async function startVote(confirmedNomineeId: string) {
+    if (busy) return
     setBusy(true)
     setError(null)
     try {
-      const action = await nominate(session.gameId, nomineeId)
+      const action = await nominate(session.gameId, confirmedNomineeId)
       onSessionChange(mergeView(session, action.view))
+      setNomineeId(confirmedNomineeId)
+      setPendingNomineeId(null)
       resolvedRef.current = false
       castOnServer.current = new Set()
       setVotes({})
@@ -205,21 +237,26 @@ export function NominationScreen({
         onWin(win)
         return
       }
-      if (
-        lastApproved &&
-        nomineeId &&
-        lastAction.view.phase === 'legislative_president'
-      ) {
-        onGovernmentApproved(nomineeId, lastAction.view)
-        return
-      }
     }
     setNomineeId(null)
     setVotes({})
     setLockedReveal(null)
     setLastApproved(null)
     setLastAction(null)
+    setPendingDrawConfirm(false)
     setPhase('nominate')
+  }
+
+  function enterLegislative() {
+    if (!lastAction || !nomineeId) return
+    const win = winFromView(lastAction.view)
+    if (win) {
+      onWin(win)
+      return
+    }
+    if (lastAction.view.phase === 'legislative_president') {
+      onGovernmentApproved(nomineeId, lastAction.view)
+    }
   }
 
   function afterTopEnactContinue() {
@@ -234,186 +271,244 @@ export function NominationScreen({
     setPhase('nominate')
   }
 
-  const nominee = nomineeId ? playerById(session, nomineeId) : null
-  const jaCount = lockedReveal
-    ? Object.values(lockedReveal).filter(Boolean).length
-    : 0
-  const neinCount = lockedReveal
-    ? Object.values(lockedReveal).filter((v) => !v).length
-    : 0
+  const pendingNominee = pendingNomineeId
+    ? playerById(session, pendingNomineeId)
+    : null
+
+  const voteBorders: Record<string, 'ja' | 'nein'> | undefined =
+    phase === 'reveal' && lockedReveal
+      ? Object.fromEntries(
+          Object.entries(lockedReveal).map(([id, ja]) => [
+            id,
+            ja ? ('ja' as const) : ('nein' as const),
+          ]),
+        )
+      : undefined
+
+  const revealWin =
+    phase === 'reveal' && lastAction ? winFromView(lastAction.view) : null
+
+  const voteOutcome =
+    phase === 'reveal' && lastApproved !== null && !revealWin
+      ? lastApproved
+        ? 'approved'
+        : 'rejected'
+      : null
+
+  const phaseTitle =
+    phase === 'nominate'
+      ? 'Nomination'
+      : phase === 'voting'
+        ? 'Voting'
+        : phase === 'reveal'
+          ? 'Vote results'
+          : 'Top Law enacted'
 
   return (
     <main className="screen table-layout nomination-screen">
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
-        <h1>
-          {phase === 'nominate' && 'Nomination'}
-          {phase === 'voting' && 'Voting'}
-          {phase === 'reveal' && 'Vote results'}
-          {phase === 'topEnactNotice' && 'Top Law enacted'}
-        </h1>
+        <h1>{phaseTitle}</h1>
       </header>
 
       <TableBoard
         players={session.players}
         presidentId={prez.id}
         rejectedIds={session.rejectedIds}
+        previousChancellorId={session.previousChancellorId}
         redsOnTable={session.redsOnTable}
         blacksOnTable={session.blacksOnTable}
         roundNumber={session.roundNumber}
+        voteBorders={voteBorders}
+        voteOutcome={voteOutcome}
+        deckEnabled={
+          phase === 'reveal' &&
+          lastApproved === true &&
+          !revealWin &&
+          !pendingDrawConfirm
+        }
+        onDeckTap={
+          phase === 'reveal' && lastApproved && !revealWin
+            ? () => setPendingDrawConfirm(true)
+            : undefined
+        }
+        onSeatTap={
+          phase === 'nominate' && eligible.length > 0
+            ? (id) => setPendingNomineeId(id)
+            : undefined
+        }
+        tappableSeatIds={
+          phase === 'nominate' && eligible.length > 0 ? eligible : undefined
+        }
+        selectedSeatId={pendingNomineeId}
+        eligibleHighlightIds={
+          phase === 'nominate' && eligible.length > 0 ? eligible : undefined
+        }
       />
+
       {error && (
-        <p className="warning" role="alert">
+        <p className="warning table-layout-warning" role="alert">
           {error}
         </p>
       )}
 
-      {phase === 'nominate' && eligible.length > 0 && (
-        <section className="settings-block">
-          <p className="lede tight">
-            <strong>{prez.name}</strong> (president) nominates a chancellor.
-          </p>
-          <div className="nominee-grid" role="radiogroup" aria-label="Nominee">
-            {eligible.map((id) => {
-              const p = playerById(session, id)!
-              const selected = nomineeId === id
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={
-                    selected ? 'count-option selected' : 'count-option'
-                  }
-                  onClick={() => setNomineeId(id)}
-                >
-                  {p.name}
-                </button>
-              )
-            })}
-          </div>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={!nomineeId || busy}
-              onClick={() => void startVote()}
-            >
-              Start vote (10s each)
-            </button>
-          </div>
-        </section>
+      {phase === 'nominate' && pendingNominee && (
+        <ConfirmOverlay
+          title={`Choose ${pendingNominee.name} as chancellor?`}
+          confirmLabel="Confirm"
+          cancelLabel="Cancel"
+          busy={busy}
+          onCancel={() => setPendingNomineeId(null)}
+          onConfirm={() => void startVote(pendingNominee.id)}
+        />
       )}
 
-      {phase === 'voting' && nominee && (
-        <section className="settings-block reveal-card">
-          <p className="reveal-progress">
-            {currentVoter
-              ? `${secondsLeft}s for ${currentVoter.name}`
-              : 'Resolving…'}
-          </p>
-          <p className="reveal-prompt">
-            Government: <strong>{prez.name}</strong> +{' '}
-            <strong>{nominee.name}</strong>
-          </p>
-          {currentVoter ? (
-            <>
-              <p className="reveal-prompt">
-                Pass to <strong>{currentVoter.name}</strong> to vote
-              </p>
-              <p className="hint">
-                Others look away. {SECONDS_PER_VOTER}s to vote; timeout counts
-                as Nein.
-              </p>
-              <div className="vote-actions">
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={busy}
-                  onClick={() => void castVoteLocal(currentVoter.id, true)}
-                >
-                  Ja
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={busy}
-                  onClick={() => void castVoteLocal(currentVoter.id, false)}
-                >
-                  Nein
-                </button>
-              </div>
-              <p className="hint">
-                Voted {Object.keys(votes).length}/{session.players.length}
-              </p>
-            </>
-          ) : (
-            <p className="hint">All votes cast — resolving…</p>
-          )}
-        </section>
+      {phase === 'voting' && currentVoter && !confirmVoteOpen && (
+        <div className="table-overlay" role="dialog" aria-modal="true">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">
+              Pass to {currentVoter.name}
+            </p>
+            <p className="table-overlay-hint">
+              {secondsLeft}s left · Others look away. Timeout counts as Nein.
+            </p>
+            <div className="vote-overlay-choices">
+              <button
+                type="button"
+                className={
+                  pendingVote === true
+                    ? 'vote-choice ja selected'
+                    : 'vote-choice ja'
+                }
+                disabled={busy}
+                onClick={() => setPendingVote(true)}
+              >
+                Ja
+              </button>
+              <button
+                type="button"
+                className={
+                  pendingVote === false
+                    ? 'vote-choice nein selected'
+                    : 'vote-choice nein'
+                }
+                disabled={busy}
+                onClick={() => setPendingVote(false)}
+              >
+                Nein
+              </button>
+            </div>
+            <div className="table-overlay-actions single">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={pendingVote === null || busy}
+                onClick={() => setConfirmVoteOpen(true)}
+              >
+                Confirm vote
+              </button>
+            </div>
+            <p className="table-overlay-hint">
+              Voted {Object.keys(votes).length}/{session.players.length}
+            </p>
+          </div>
+        </div>
       )}
 
-      {phase === 'reveal' && lockedReveal && nominee && (
-        <section className="settings-block">
-          <p className="lede tight">
-            {lastApproved ? (
-              <>
-                Government <strong>approved</strong> ({jaCount} Ja / {neinCount}{' '}
-                Nein).
-              </>
-            ) : (
-              <>
-                Government <strong>rejected</strong>. {nominee.name} is barred
-                this round; {prez.name} nominates again.
-              </>
-            )}
-          </p>
-          <ul className="vote-list">
-            {session.players.map((p) => (
-              <li key={p.id}>
-                <span>{p.name}</span>
-                <strong>{lockedReveal[p.id] ? 'Ja' : 'Nein'}</strong>
-              </li>
-            ))}
-          </ul>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={afterRevealContinue}
-            >
-              Continue
-            </button>
+      {phase === 'voting' && currentVoter && confirmVoteOpen && pendingVote !== null && (
+        <ConfirmOverlay
+          title={`Cast ${pendingVote ? 'Ja' : 'Nein'} for ${currentVoter.name}?`}
+          confirmLabel="Cast vote"
+          cancelLabel="Change"
+          busy={busy}
+          onCancel={() => setConfirmVoteOpen(false)}
+          onConfirm={() => void castVoteLocal(currentVoter.id, pendingVote)}
+        />
+      )}
+
+      {phase === 'voting' && !currentVoter && (
+        <div className="table-overlay" role="status">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">Resolving…</p>
           </div>
-        </section>
+        </div>
+      )}
+
+      {phase === 'reveal' && revealWin && (
+        <div className="table-overlay" role="dialog" aria-modal="true">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">Game over</p>
+            <p className="table-overlay-hint">
+              Government approved — Hitler was elected chancellor.
+            </p>
+            <div className="table-overlay-actions single">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => onWin(revealWin)}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'reveal' && lastApproved === false && !revealWin && (
+        <div className="reveal-continue-bar">
+          <button
+            type="button"
+            className="btn primary"
+            onClick={afterRevealContinue}
+          >
+            Continue
+          </button>
+        </div>
+      )}
+
+      {phase === 'reveal' && pendingDrawConfirm && !revealWin && (
+        <ConfirmOverlay
+          title="Draw 3 LawCards?"
+          hint="President draws from the deck."
+          confirmLabel="Draw"
+          cancelLabel="Cancel"
+          onCancel={() => setPendingDrawConfirm(false)}
+          onConfirm={() => {
+            setPendingDrawConfirm(false)
+            enterLegislative()
+          }}
+        />
       )}
 
       {phase === 'topEnactNotice' && (
-        <section className="settings-block reveal-card">
-          <p className="reveal-prompt">
-            No eligible nominees left. Top LawCard enacted
-            {topEnactColor ? (
-              <>
-                :{' '}
-                <strong className={`law-${topEnactColor}`}>
-                  {topEnactColor}
-                </strong>
-              </>
-            ) : null}
-            .
-          </p>
-          <p className="hint">Round advances; presidency rotates.</p>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={afterTopEnactContinue}
-            >
-              Continue
-            </button>
+        <div className="table-overlay" role="dialog" aria-modal="true">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">Top Law enacted</p>
+            <p className="table-overlay-hint">
+              No eligible nominees left.
+              {topEnactColor ? (
+                <>
+                  {' '}
+                  Enacted:{' '}
+                  <strong className={`law-${topEnactColor}`}>
+                    {topEnactColor}
+                  </strong>
+                  .
+                </>
+              ) : null}{' '}
+              Round advances; presidency rotates.
+            </p>
+            <div className="table-overlay-actions single">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={afterTopEnactContinue}
+              >
+                Continue
+              </button>
+            </div>
           </div>
-        </section>
+        </div>
       )}
     </main>
   )

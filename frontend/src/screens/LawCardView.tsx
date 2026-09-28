@@ -5,13 +5,20 @@ type Props = {
   selected?: boolean
   onSelect?: () => void
   disabled?: boolean
+  faceDown?: boolean
 }
 
-export function LawCardView({ card, selected, onSelect, disabled }: Props) {
-  const interactive = Boolean(onSelect) && !disabled
+export function LawCardView({
+  card,
+  selected,
+  onSelect,
+  disabled,
+  faceDown = false,
+}: Props) {
+  const interactive = Boolean(onSelect) && !disabled && !faceDown
   const className = [
     'law-card',
-    `law-card-${card.color}`,
+    faceDown ? 'face-down' : `law-card-${card.color}`,
     selected ? 'selected' : '',
     interactive ? 'interactive' : '',
   ]
@@ -34,7 +41,14 @@ export function LawCardView({ card, selected, onSelect, disabled }: Props) {
   }
 
   return (
-    <div className={className} aria-label={`${card.color} LawCard ${card.number}`}>
+    <div
+      className={className}
+      aria-label={
+        faceDown
+          ? 'Face-down LawCard'
+          : `${card.color} LawCard ${card.number}`
+      }
+    >
       <span className="law-card-kind">Law</span>
       <span className="law-card-number">{card.number}</span>
       <span className="law-card-color">{card.color}</span>

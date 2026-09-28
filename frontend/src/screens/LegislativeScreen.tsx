@@ -13,15 +13,16 @@ import {
   type GameSession,
   type WinResult,
 } from '../gameSession'
+import { ConfirmOverlay } from './ConfirmOverlay'
 import { LawCardView } from './LawCardView'
 import { TableBoard } from './TableBoard'
 
 type Phase =
   | 'loading'
-  | 'passPresident'
-  | 'presidentDiscard'
+  | 'presidentSelect'
+  | 'presidentFaceDown'
   | 'passChancellor'
-  | 'chancellorDiscard'
+  | 'chancellorSelect'
   | 'done'
 
 type Props = {
@@ -42,6 +43,8 @@ export function LegislativeScreen({
   const [phase, setPhase] = useState<Phase>('loading')
   const [hand, setHand] = useState<LawCardDto[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [pendingDiscardId, setPendingDiscardId] = useState<number | null>(null)
+  const [cardsFaceDown, setCardsFaceDown] = useState(false)
   const [enactedColor, setEnactedColor] = useState<'red' | 'black' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -56,7 +59,7 @@ export function LegislativeScreen({
         const res = await getHand(session.gameId, prez.id)
         if (cancelled) return
         setHand(res.cards)
-        setPhase('passPresident')
+        setPhase('presidentSelect')
       } catch (err) {
         if (cancelled) return
         setError(err instanceof Error ? err.message : 'Failed to load hand')
@@ -68,15 +71,17 @@ export function LegislativeScreen({
   }, [session.gameId, prez.id])
 
   async function confirmPresidentDiscard() {
-    if (selectedId === null || hand.length !== 3 || busy) return
+    if (pendingDiscardId === null || hand.length !== 3 || busy) return
     setBusy(true)
     setError(null)
     try {
-      const action = await presidentDiscard(session.gameId, selectedId)
+      const action = await presidentDiscard(session.gameId, pendingDiscardId)
       onSessionChange(mergeView(session, action.view))
-      setHand(action.hand ?? hand.filter((c) => c.id !== selectedId))
+      setHand(action.hand ?? hand.filter((c) => c.id !== pendingDiscardId))
       setSelectedId(null)
-      setPhase('passChancellor')
+      setPendingDiscardId(null)
+      setCardsFaceDown(true)
+      setPhase('presidentFaceDown')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Discard failed')
     } finally {
@@ -86,8 +91,8 @@ export function LegislativeScreen({
 
   /** Chancellor discards 1 of 2; API enacts the remaining LawCard. */
   async function confirmChancellorDiscard() {
-    if (selectedId === null || hand.length !== 2 || busy) return
-    const remaining = hand.find((c) => c.id !== selectedId)
+    if (pendingDiscardId === null || hand.length !== 2 || busy) return
+    const remaining = hand.find((c) => c.id !== pendingDiscardId)
     if (!remaining) return
     setBusy(true)
     setError(null)
@@ -96,6 +101,8 @@ export function LegislativeScreen({
       onSessionChange(mergeView(session, action.view))
       const color = action.enacted?.color ?? remaining.color
       setEnactedColor(color)
+      setPendingDiscardId(null)
+      setSelectedId(null)
       const win = winFromView(action.view)
       if (win) {
         onWin(win)
@@ -109,152 +116,163 @@ export function LegislativeScreen({
     }
   }
 
+  const showCardOverlay =
+    phase === 'presidentSelect' ||
+    phase === 'presidentFaceDown' ||
+    phase === 'chancellorSelect'
+
+  const cardsInteractive =
+    (phase === 'presidentSelect' || phase === 'chancellorSelect') &&
+    pendingDiscardId === null
+
+  const phaseTitle =
+    phase === 'loading'
+      ? 'Drawing LawCards…'
+      : phase === 'presidentSelect' || phase === 'presidentFaceDown'
+        ? 'President discard'
+        : phase === 'passChancellor'
+          ? 'Pass to chancellor'
+          : phase === 'chancellorSelect'
+            ? 'Chancellor discard'
+            : 'Law enacted'
+
   return (
     <main className="screen table-layout legislative-screen">
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
-        <h1>
-          {phase === 'loading' && 'Drawing LawCards…'}
-          {phase === 'passPresident' && 'Pass to president'}
-          {phase === 'presidentDiscard' && 'President discard'}
-          {phase === 'passChancellor' && 'Pass to chancellor'}
-          {phase === 'chancellorDiscard' && 'Chancellor discard'}
-          {phase === 'done' && 'Law enacted'}
-        </h1>
+        <h1>{phaseTitle}</h1>
       </header>
 
-      {(phase === 'passPresident' ||
-        phase === 'passChancellor' ||
-        phase === 'done') && (
-        <TableBoard
-          players={session.players}
-          presidentId={prez.id}
-          rejectedIds={session.rejectedIds}
-          redsOnTable={session.redsOnTable}
-          blacksOnTable={session.blacksOnTable}
-          roundNumber={session.roundNumber}
-        />
-      )}
+      <TableBoard
+        players={session.players}
+        presidentId={prez.id}
+        rejectedIds={session.rejectedIds}
+        previousChancellorId={session.previousChancellorId}
+        redsOnTable={session.redsOnTable}
+        blacksOnTable={session.blacksOnTable}
+        roundNumber={session.roundNumber}
+      />
 
       {error && (
-        <p className="warning" role="alert">
+        <p className="warning table-layout-warning" role="alert">
           {error}
         </p>
       )}
 
-      {phase === 'passPresident' && (
-        <section className="settings-block reveal-card">
-          <p className="reveal-prompt">
-            Pass the device to <strong>{prez.name}</strong> (president).
-          </p>
-          <p className="hint">Others look away before the LawCards are shown.</p>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => setPhase('presidentDiscard')}
-            >
-              Reveal hand
-            </button>
-          </div>
-        </section>
-      )}
-
-      {phase === 'presidentDiscard' && (
-        <section className="settings-block">
-          <p className="lede tight">
-            <strong>{prez.name}</strong>, discard exactly one LawCard (returns
-            to the deck).
+      {showCardOverlay && (
+        <div className="table-card-overlay" aria-label="LawCards">
+          <p className="table-card-overlay-hint">
+            {phase === 'presidentSelect' &&
+              `${prez.name}: tap a LawCard to discard`}
+            {phase === 'presidentFaceDown' && 'Cards face down — ready to pass'}
+            {phase === 'chancellorSelect' &&
+              `${chancellor?.name ?? 'Chancellor'}: tap a LawCard to discard`}
           </p>
           <div className="law-hand" role="radiogroup" aria-label="LawCards">
             {hand.map((card) => (
               <LawCardView
                 key={card.id}
                 card={card}
+                faceDown={cardsFaceDown}
                 selected={selectedId === card.id}
-                onSelect={() => setSelectedId(card.id)}
+                onSelect={
+                  cardsInteractive
+                    ? () => {
+                        setSelectedId(card.id)
+                        setPendingDiscardId(card.id)
+                      }
+                    : undefined
+                }
               />
             ))}
           </div>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={selectedId === null || busy}
-              onClick={() => void confirmPresidentDiscard()}
-            >
-              Discard selected
-            </button>
-          </div>
-        </section>
+        </div>
+      )}
+
+      {phase === 'presidentSelect' && pendingDiscardId !== null && (
+        <ConfirmOverlay
+          title="Discard this LawCard?"
+          hint="It returns to the deck. The other two pass face down to the chancellor."
+          confirmLabel="Discard"
+          cancelLabel="Change"
+          busy={busy}
+          onCancel={() => {
+            setPendingDiscardId(null)
+            setSelectedId(null)
+          }}
+          onConfirm={() => void confirmPresidentDiscard()}
+        />
+      )}
+
+      {phase === 'presidentFaceDown' && (
+        <ConfirmOverlay
+          title={`Pass the phone to ${chancellor?.name ?? 'chancellor'}?`}
+          hint="Keep the remaining LawCards face down until they are ready."
+          confirmLabel="Pass phone"
+          onConfirm={() => {
+            setCardsFaceDown(true)
+            setPhase('passChancellor')
+          }}
+        />
       )}
 
       {phase === 'passChancellor' && (
-        <section className="settings-block reveal-card">
-          <p className="reveal-prompt">
-            Pass the device to{' '}
-            <strong>{chancellor?.name ?? 'chancellor'}</strong>.
-          </p>
-          <p className="hint">
-            Two LawCards remain. Do not show them until the chancellor is ready.
-          </p>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => setPhase('chancellorDiscard')}
-            >
-              Reveal hand
-            </button>
-          </div>
-        </section>
+        <ConfirmOverlay
+          title={`Ready, ${chancellor?.name ?? 'chancellor'}?`}
+          hint="Others look away before the LawCards are revealed."
+          confirmLabel="Reveal hand"
+          onConfirm={() => {
+            setCardsFaceDown(false)
+            setSelectedId(null)
+            setPendingDiscardId(null)
+            setPhase('chancellorSelect')
+          }}
+        />
       )}
 
-      {phase === 'chancellorDiscard' && (
-        <section className="settings-block">
-          <p className="lede tight">
-            <strong>{chancellor?.name}</strong>, discard exactly one LawCard
-            (returns to the deck). The other is enacted on the table.
-          </p>
-          <div className="law-hand" role="radiogroup" aria-label="LawCards">
-            {hand.map((card) => (
-              <LawCardView
-                key={card.id}
-                card={card}
-                selected={selectedId === card.id}
-                onSelect={() => setSelectedId(card.id)}
-              />
-            ))}
-          </div>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={selectedId === null || busy}
-              onClick={() => void confirmChancellorDiscard()}
-            >
-              Discard selected
-            </button>
-          </div>
-        </section>
+      {phase === 'chancellorSelect' && pendingDiscardId !== null && (
+        <ConfirmOverlay
+          title="Discard this LawCard?"
+          hint="The other LawCard will be enacted on the table."
+          confirmLabel="Discard & enact"
+          cancelLabel="Change"
+          busy={busy}
+          onCancel={() => {
+            setPendingDiscardId(null)
+            setSelectedId(null)
+          }}
+          onConfirm={() => void confirmChancellorDiscard()}
+        />
       )}
 
       {phase === 'done' && (
-        <section className="settings-block reveal-card">
-          <p className="reveal-prompt">
-            A <strong className={`law-${enactedColor}`}>{enactedColor}</strong>{' '}
-            LawCard was enacted. Round advances.
-          </p>
-          <div className="screen-actions nested-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={onRoundComplete}
-            >
-              Continue to nomination
-            </button>
+        <div className="table-overlay" role="dialog" aria-modal="true">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">Law enacted</p>
+            <p className="table-overlay-hint">
+              A{' '}
+              <strong className={`law-${enactedColor}`}>{enactedColor}</strong>{' '}
+              LawCard was enacted. Round advances.
+            </p>
+            <div className="table-overlay-actions single">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={onRoundComplete}
+              >
+                Continue to nomination
+              </button>
+            </div>
           </div>
-        </section>
+        </div>
+      )}
+
+      {phase === 'loading' && (
+        <div className="table-overlay" role="status">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">Drawing LawCards…</p>
+          </div>
+        </div>
       )}
     </main>
   )

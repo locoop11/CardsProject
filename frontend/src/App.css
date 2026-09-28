@@ -9,6 +9,11 @@
   --radius: 10px;
   --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
   --font-body: 'Figtree', 'Segoe UI', sans-serif;
+  --felt-light: #6eb4d4;
+  --felt-mid: #3d8fb8;
+  --felt-deep: #1f5f82;
+  --vote-ja: #2f9e5b;
+  --vote-nein: #c23030;
 }
 
 *,
@@ -41,7 +46,9 @@ body {
 }
 
 #root:has(.table-layout) {
-  padding: 0.75rem 0.55rem 1.25rem;
+  padding: 0;
+  min-height: 100dvh;
+  align-items: stretch;
 }
 
 .screen {
@@ -470,37 +477,67 @@ body {
 
 .screen.table-layout {
   width: min(26rem, 100%);
-  gap: 0.9rem;
+  margin: 0 auto;
+  min-height: 100dvh;
+  gap: 0;
+  position: relative;
+  padding: 0;
+}
+
+.screen.table-layout > .screen-header {
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  gap: 0.1rem;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.screen.table-layout > .screen-header .brand {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.screen.table-layout > .screen-header h1 {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.1em;
 }
 
 .table-board {
   width: 100%;
+  flex: 1;
+  display: flex;
+  min-height: 100dvh;
 }
 
 .table-felt {
   position: relative;
   width: 100%;
-  /* Phone portrait: full column width × most of the viewport height */
-  height: min(68dvh, 34rem);
+  flex: 1;
+  min-height: 100dvh;
   margin: 0 auto;
-  border-radius: 1rem;
+  border-radius: 0;
   background:
     radial-gradient(
       ellipse 90% 75% at 50% 40%,
-      #2f6b45 0%,
-      #1a4a2e 55%,
-      #123524 100%
+      var(--felt-light) 0%,
+      var(--felt-mid) 55%,
+      var(--felt-deep) 100%
     );
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.12),
-    inset 0 0 40px rgba(0, 0, 0, 0.35),
-    0 12px 28px rgba(18, 28, 22, 0.35);
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+    inset 0 0 40px rgba(0, 0, 0, 0.22);
   overflow: hidden;
 }
 
 .table-meta {
   position: absolute;
-  top: 0.5rem;
+  top: 2.1rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
@@ -513,6 +550,78 @@ body {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.table-vote-banner {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 30%);
+  transform: translate(-50%, -100%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.table-vote-banner .banner-text {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.table-vote-banner .banner-text.approved {
+  color: #b8f5ce;
+}
+
+.table-vote-banner .banner-text.rejected {
+  color: #ffc9c9;
+}
+
+.deck-pile {
+  pointer-events: auto;
+  position: relative;
+  width: 2.6rem;
+  height: 3.4rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.deck-pile:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.deck-pile-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      #1e2a36 0 3px,
+      #243242 3px 6px
+    );
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.deck-pile-card:nth-child(1) {
+  transform: translate(-3px, 3px) rotate(-4deg);
+}
+
+.deck-pile-card:nth-child(2) {
+  transform: translate(2px, 1px) rotate(3deg);
+}
+
+.deck-pile-card:nth-child(3) {
+  transform: none;
 }
 
 .table-oval {
@@ -589,6 +698,65 @@ body {
   align-items: center;
   gap: 0.28rem;
   transform: translate(-50%, -50%);
+  border: 2.5px solid transparent;
+  border-radius: 8px;
+  padding: 0.15rem;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button.table-seat {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.table-seat:disabled {
+  cursor: default;
+}
+
+.seat-hit {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.table-seat.is-eligible .seat-name-card {
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.table-seat.is-selected .seat-name-card {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.table-seat.vote-ja .seat-role-card,
+.table-seat.vote-ja .seat-name-card {
+  border-color: var(--vote-ja);
+  box-shadow:
+    0 0 0 2px var(--vote-ja),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  opacity: 1;
+}
+
+.table-seat.vote-nein .seat-role-card,
+.table-seat.vote-nein .seat-name-card {
+  border-color: var(--vote-nein);
+  box-shadow:
+    0 0 0 2px var(--vote-nein),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  opacity: 1;
 }
 
 .seat-role-card {
@@ -651,17 +819,41 @@ body {
     0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
+/* Vote borders win over president gold during reveal */
+.table-seat.vote-ja.is-president .seat-name-card,
+.table-seat.vote-ja .seat-role-card,
+.table-seat.vote-ja .seat-name-card {
+  border-color: var(--vote-ja);
+  box-shadow:
+    0 0 0 2px var(--vote-ja),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.table-seat.vote-nein.is-president .seat-name-card,
+.table-seat.vote-nein .seat-role-card,
+.table-seat.vote-nein .seat-name-card {
+  border-color: var(--vote-nein);
+  box-shadow:
+    0 0 0 2px var(--vote-nein),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
 .table-seat.is-rejected .seat-role-card,
 .table-seat.is-rejected .seat-name-card {
   opacity: 0.55;
 }
 
+.reveal-continue-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 1.1rem;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: min(16rem, calc(100% - 2rem));
+}
+
 /* Slightly taller seats when there's room (large phones / tablets) */
 @media (min-height: 740px) {
-  .table-felt {
-    height: min(72dvh, 38rem);
-  }
-
   .seat-role-card {
     width: 2.35rem;
     height: 3.25rem;
@@ -681,4 +873,193 @@ body {
     width: 1.35rem;
     height: 1.9rem;
   }
+}
+
+/* --- Table overlays (confirm / vote / cards) --- */
+
+.table-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(10, 18, 28, 0.45);
+}
+
+.table-overlay.table-overlay-light {
+  background: transparent;
+  pointer-events: none;
+}
+
+.table-overlay.table-overlay-light .table-overlay-panel {
+  pointer-events: auto;
+}
+
+.table-overlay-panel {
+  width: min(22rem, 100%);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.table-overlay-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--ink);
+}
+
+.table-overlay-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.table-overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.table-overlay-actions.single {
+  grid-template-columns: 1fr;
+}
+
+.vote-overlay-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.vote-choice {
+  min-height: 3.2rem;
+  border-radius: var(--radius);
+  border: 2px solid rgba(26, 31, 38, 0.15);
+  background: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vote-choice.ja.selected {
+  border-color: var(--vote-ja);
+  background: #e6f7ec;
+  color: var(--vote-ja);
+}
+
+.vote-choice.nein.selected {
+  border-color: var(--vote-nein);
+  background: #fdeaea;
+  color: var(--vote-nein);
+}
+
+.table-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(8, 20, 32, 0.35);
+  pointer-events: auto;
+}
+
+.table-card-overlay .law-hand {
+  margin: 0;
+  pointer-events: auto;
+}
+
+.table-card-overlay-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.law-card.face-down {
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      #1e2a36 0 4px,
+      #243242 4px 8px
+    );
+  color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.law-card.face-down .law-card-kind,
+.law-card.face-down .law-card-number,
+.law-card.face-down .law-card-color {
+  visibility: hidden;
+}
+
+.table-layout-warning {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(90%, 20rem);
+  margin: 0;
+  text-align: center;
+}
+
+/* Win screen keeps a compact table + role list below */
+.screen.table-layout.win-screen {
+  min-height: auto;
+  gap: 0.9rem;
+  padding: 0.75rem 0.55rem 1.5rem;
+}
+
+.screen.table-layout.win-screen > .screen-header {
+  position: static;
+  transform: none;
+  pointer-events: auto;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.screen.table-layout.win-screen > .screen-header .brand {
+  font-size: 1.75rem;
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.screen.table-layout.win-screen > .screen-header h1 {
+  font-size: 1.05rem;
+  color: var(--ink-muted);
+}
+
+.screen.table-layout.win-screen .table-board {
+  min-height: unset;
+  flex: none;
+}
+
+.screen.table-layout.win-screen .table-felt {
+  min-height: unset;
+  height: min(48dvh, 22rem);
+  border-radius: 1rem;
+}
+
+#root:has(.win-screen) {
+  padding: 0.75rem 0.55rem 1.25rem;
+  min-height: 100%;
+  align-items: flex-start;
 }

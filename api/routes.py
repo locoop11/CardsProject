@@ -147,8 +147,17 @@ def resolve(game_id: str) -> ActionResponse:
     except EngineError as exc:
         raise _engine_error(exc) from exc
 
-    # After resolve, missing votes were filled as Nein on state.votes.
-    votes_snapshot = dict(session.state.votes)
+    # Reject clears state.votes; approved may keep them. Prefer the snapshot
+    # recorded on the resolve_votes action (includes timeout Neins).
+    votes_snapshot: dict[str, bool] = {}
+    for entry in reversed(session.state.action_log):
+        if entry.type == "resolve_votes":
+            raw = entry.payload.get("votes") or {}
+            votes_snapshot = {str(k): bool(v) for k, v in raw.items()}
+            break
+    if not votes_snapshot:
+        votes_snapshot = dict(session.state.votes)
+
     enacted = _last_enacted_if_grew(session.state, before_table)
     hand = _hand_if_legislative(session.state)
     return ActionResponse(

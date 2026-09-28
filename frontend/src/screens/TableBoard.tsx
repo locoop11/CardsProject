@@ -1,12 +1,23 @@
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
 
+type VoteBorder = 'ja' | 'nein'
+
 type Props = {
   players: TablePlayer[]
   presidentId: string
   rejectedIds: string[]
+  previousChancellorId?: string | null
   redsOnTable: number
   blacksOnTable: number
   roundNumber: number
+  voteBorders?: Record<string, VoteBorder>
+  voteOutcome?: 'approved' | 'rejected' | null
+  onDeckTap?: () => void
+  deckEnabled?: boolean
+  onSeatTap?: (playerId: string) => void
+  tappableSeatIds?: string[]
+  selectedSeatId?: string | null
+  eligibleHighlightIds?: string[]
 }
 
 /** Place seats evenly around a rounded-rectangle perimeter (phone-friendly). */
@@ -15,11 +26,11 @@ function seatPosition(index: number, total: number): {
   top: string
 } {
   const insetX = 12
-  const insetY = 8
+  // Keep mid-top / mid-bottom seats clear of the center law rectangle.
+  const top = 3.5
+  const bottom = 96.5
   const left = insetX
   const right = 100 - insetX
-  const top = insetY
-  const bottom = 100 - insetY
   const width = right - left
   const height = bottom - top
   const perimeter = 2 * (width + height)
@@ -46,11 +57,23 @@ export function TableBoard({
   players,
   presidentId,
   rejectedIds,
+  previousChancellorId = null,
   redsOnTable,
   blacksOnTable,
   roundNumber,
+  voteBorders,
+  voteOutcome = null,
+  onDeckTap,
+  deckEnabled = false,
+  onSeatTap,
+  tappableSeatIds,
+  selectedSeatId = null,
+  eligibleHighlightIds,
 }: Props) {
   const rejected = new Set(rejectedIds)
+  const tappable = new Set(tappableSeatIds ?? [])
+  const eligible = new Set(eligibleHighlightIds ?? tappableSeatIds ?? [])
+  const revealingVotes = Boolean(voteBorders)
 
   return (
     <section className="table-board" aria-label="Game table">
@@ -59,10 +82,42 @@ export function TableBoard({
           <span>Round {roundNumber}</span>
         </p>
 
+        {voteOutcome && (
+          <div className="table-vote-banner" aria-live="polite">
+            {voteOutcome === 'approved' && (
+              <button
+                type="button"
+                className="deck-pile"
+                aria-label="Draw LawCards from deck"
+                disabled={!deckEnabled || !onDeckTap}
+                onClick={onDeckTap}
+              >
+                <span className="deck-pile-card" aria-hidden="true" />
+                <span className="deck-pile-card" aria-hidden="true" />
+                <span className="deck-pile-card" aria-hidden="true" />
+              </button>
+            )}
+            <p
+              className={
+                voteOutcome === 'approved'
+                  ? 'banner-text approved'
+                  : 'banner-text rejected'
+              }
+            >
+              {voteOutcome === 'approved'
+                ? 'Vote Approved'
+                : 'Vote Rejected — Try again'}
+            </p>
+          </div>
+        )}
+
         <div className="table-oval" aria-label="Enacted LawCards">
           <div className="law-row law-row-red">
             <span className="law-row-label">Communist</span>
-            <div className="law-row-slots" aria-label={`Red laws ${redsOnTable} of ${RED_WIN}`}>
+            <div
+              className="law-row-slots"
+              aria-label={`Red laws ${redsOnTable} of ${RED_WIN}`}
+            >
               {Array.from({ length: RED_WIN }, (_, i) => (
                 <span
                   key={`red-${i}`}
@@ -99,19 +154,28 @@ export function TableBoard({
           {players.map((player, index) => {
             const pos = seatPosition(index, players.length)
             const isPresident = player.id === presidentId
-            const isRejected = rejected.has(player.id)
-            return (
-              <li
-                key={player.id}
-                className={[
-                  'table-seat',
-                  isPresident ? 'is-president' : '',
-                  isRejected ? 'is-rejected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                style={{ left: pos.left, top: pos.top }}
-              >
+            const isBarred =
+              rejected.has(player.id) || player.id === previousChancellorId
+            // During vote reveal, keep seats undimmed so Ja/Nein borders read clearly.
+            const isRejected = isBarred && !revealingVotes
+            const isTappable = tappable.has(player.id) && Boolean(onSeatTap)
+            const isEligible = eligible.has(player.id)
+            const isSelected = selectedSeatId === player.id
+            const vote = voteBorders?.[player.id]
+            const className = [
+              'table-seat',
+              isPresident ? 'is-president' : '',
+              isRejected ? 'is-rejected' : '',
+              isEligible ? 'is-eligible' : '',
+              isSelected ? 'is-selected' : '',
+              vote === 'ja' ? 'vote-ja' : '',
+              vote === 'nein' ? 'vote-nein' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')
+
+            const content = (
+              <>
                 <div
                   className="seat-role-card"
                   aria-hidden="true"
@@ -122,10 +186,31 @@ export function TableBoard({
                   {isPresident && (
                     <span className="seat-office">President</span>
                   )}
-                  {isRejected && !isPresident && (
+                  {rejected.has(player.id) && !isPresident && !revealingVotes && (
                     <span className="seat-office muted">Rejected</span>
                   )}
                 </div>
+              </>
+            )
+
+            return (
+              <li
+                key={player.id}
+                className={className}
+                style={{ left: pos.left, top: pos.top }}
+              >
+                {isTappable ? (
+                  <button
+                    type="button"
+                    className="seat-hit"
+                    aria-label={`Nominate ${player.name}`}
+                    onClick={() => onSeatTap?.(player.id)}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  content
+                )}
               </li>
             )
           })}
