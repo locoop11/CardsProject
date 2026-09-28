@@ -49,6 +49,37 @@ def player_role_reveal(player: Player) -> dict[str, str]:
     }
 
 
+def normalize_entry_names(player_names: list[str]) -> list[str]:
+    """Match start_game blank-name filling (Player 1, Player 2, …)."""
+    return [
+        name.strip() if name.strip() else f"Player {i + 1}"
+        for i, name in enumerate(player_names)
+    ]
+
+
+def role_reveal_in_entry_order(
+    state: GameState, player_names: list[str]
+) -> list[dict[str, str]]:
+    """
+    Role-reveal list in name-entry order (pass-and-play friendly).
+
+    Seats may be shuffled for presidency; reveal still follows the order
+    names were typed so the device is passed around the same way.
+    Duplicate names are matched in entry order (first unused seat each time).
+    """
+    remaining: dict[str, list[Player]] = {}
+    for player in state.players:
+        remaining.setdefault(player.name, []).append(player)
+
+    ordered: list[dict[str, str]] = []
+    for name in normalize_entry_names(player_names):
+        bucket = remaining.get(name)
+        if not bucket:
+            continue
+        ordered.append(player_role_reveal(bucket.pop(0)))
+    return ordered
+
+
 def public_view(state: GameState, *, game_id: str) -> dict[str, Any]:
     """
     Board / phase snapshot safe to show the whole table.

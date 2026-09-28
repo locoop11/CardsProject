@@ -41,6 +41,21 @@ def test_create_game_returns_public_view_without_roles_on_players() -> None:
     assert data["view"]["reds_on_table"] == 0
 
 
+def test_role_reveal_follows_name_entry_order_not_seat_shuffle() -> None:
+    """Pass-and-play reveal must match typed seats even when seats shuffle."""
+    names = ["Ada", "Bo", "Cy", "Di", "Ed"]
+    res = client.post(
+        "/api/games",
+        json={"player_count": 5, "player_names": names, "seed": 42},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert [p["name"] for p in data["role_reveal"]] == names
+    # Seat order on the board may differ after shuffle.
+    seat_names = [p["name"] for p in data["view"]["players"]]
+    assert sorted(seat_names) == sorted(names)
+
+
 def test_player_role_endpoint_scoped() -> None:
     data = _create()
     gid = data["game_id"]

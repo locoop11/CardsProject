@@ -4,7 +4,26 @@ from secret_cards.engine.start import start_game
 from secret_cards.engine.vote import cast_vote, resolve_votes
 from secret_cards.engine.nominate import nominate_chancellor
 from secret_cards.model import Settings
-from secret_cards.views import legislative_hand, public_view, role_for_player
+from secret_cards.views import (
+    legislative_hand,
+    public_view,
+    role_for_player,
+    role_reveal_in_entry_order,
+)
+
+
+def test_role_reveal_in_entry_order_ignores_seat_shuffle() -> None:
+    import random
+
+    names = ["Ada", "Bo", "Cy", "Di", "Ed"]
+    state = start_game(
+        Settings(player_count=5),
+        names,
+        rng=random.Random(99),
+    )
+    reveal = role_reveal_in_entry_order(state, names)
+    assert [p["name"] for p in reveal] == names
+    assert {p["id"] for p in reveal} == {p.id for p in state.players}
 
 
 def test_public_view_omits_roles() -> None:

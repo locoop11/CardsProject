@@ -54,7 +54,8 @@ Start a game (`start_game`).
 }
 ```
 
-`role_reveal` is for **single-device pass-and-play** only. Prefer
+`role_reveal` is for **single-device pass-and-play** only. Order matches
+**name-entry order** (not shuffled seat / president order). Prefer
 `GET /api/games/{id}/role/{player_id}` once multi-device (Task 4.2).
 
 ### `GET /api/games/{game_id}`

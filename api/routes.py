@@ -29,9 +29,9 @@ from secret_cards.model import Settings
 from secret_cards.views import (
     card_to_dict,
     legislative_hand,
-    player_role_reveal,
     public_view,
     role_for_player,
+    role_reveal_in_entry_order,
 )
 
 router = APIRouter(prefix="/api")
@@ -76,9 +76,10 @@ def create_game(body: CreateGameRequest) -> CreateGameResponse:
     return CreateGameResponse(
         game_id=session.game_id,
         view=_view(session.game_id, state),
+        # Reveal in typed name order; seats stay shuffled for the game.
         role_reveal=[
-            RoleRevealOut.model_validate(player_role_reveal(p))
-            for p in state.players
+            RoleRevealOut.model_validate(p)
+            for p in role_reveal_in_entry_order(state, body.player_names)
         ],
     )
 
