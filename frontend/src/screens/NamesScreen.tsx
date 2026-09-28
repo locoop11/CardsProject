@@ -7,7 +7,9 @@ type Props = {
   names: string[]
   onNameChange: (index: number, value: string) => void
   onBack: () => void
-  onContinue: (resolvedNames: string[]) => void
+  onContinue: (resolvedNames: string[]) => void | Promise<void>
+  busy?: boolean
+  error?: string | null
 }
 
 export function NamesScreen({
@@ -16,6 +18,8 @@ export function NamesScreen({
   onNameChange,
   onBack,
   onContinue,
+  busy = false,
+  error = null,
 }: Props) {
   const previewResolved = useMemo(
     () => resolvePlayerNames(names.slice(0, playerCount)),
@@ -58,17 +62,29 @@ export function NamesScreen({
         )}
       </section>
 
+      {error && (
+        <p className="warning" role="alert">
+          {error}
+        </p>
+      )}
+
       <footer className="screen-actions">
         <button
           type="button"
           className="btn primary"
+          disabled={busy}
           onClick={() =>
-            onContinue(resolvePlayerNames(names.slice(0, playerCount)))
+            void onContinue(resolvePlayerNames(names.slice(0, playerCount)))
           }
         >
-          Continue
+          {busy ? 'Starting…' : 'Continue'}
         </button>
-        <button type="button" className="btn ghost" onClick={onBack}>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={busy}
+          onClick={onBack}
+        >
           Back to settings
         </button>
       </footer>

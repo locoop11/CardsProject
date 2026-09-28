@@ -18,6 +18,15 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         ? '6 black LawCards enacted'
         : 'Hitler elected chancellor'
 
+  const roleRows =
+    win.players.length > 0
+      ? win.players
+      : session.players.map((p) => ({
+          name: p.name,
+          role: p.role ?? 'communist',
+          team: p.team ?? 'communist',
+        }))
+
   return (
     <main className="screen win-screen">
       <header className="screen-header">
@@ -36,8 +45,8 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
       <section className="settings-block">
         <h2>Roles</h2>
         <ul className="vote-list">
-          {session.players.map((p) => (
-            <li key={p.id}>
+          {roleRows.map((p) => (
+            <li key={p.name}>
               <span>{p.name}</span>
               <strong>
                 {p.role} · {p.team}

@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { castVote as apiCastVote, nominate, resolveVotes } from '../api/client'
+import type { ActionResponse, PublicView } from '../api/types'
 import {
   SECONDS_PER_VOTER,
-  checkEnactmentWin,
-  checkHitlerElected,
-  eligibleChancellorIds,
-  enactTopLaw,
+  mergeView,
   playerById,
   president,
-  rejectNominee,
-  resolveElection,
   toPublicBoard,
+  winFromView,
   type GameSession,
   type WinResult,
 } from '../gameSession'
@@ -20,8 +18,16 @@ type Phase = 'nominate' | 'voting' | 'reveal' | 'topEnactNotice'
 type Props = {
   session: GameSession
   onSessionChange: (session: GameSession) => void
-  onGovernmentApproved: (chancellorId: string) => void
+  onGovernmentApproved: (chancellorId: string, view: PublicView) => void
   onWin: (win: WinResult) => void
+}
+
+function isApprovedResult(action: ActionResponse): boolean {
+  return (
+    action.view.phase === 'legislative_president' ||
+    (action.view.phase === 'game_over' &&
+      action.view.win_reason === 'hitler_elected')
+  )
 }
 
 export function NominationScreen({
@@ -39,17 +45,21 @@ export function NominationScreen({
     boolean
   > | null>(null)
   const [lastApproved, setLastApproved] = useState<boolean | null>(null)
+  const [lastAction, setLastAction] = useState<ActionResponse | null>(null)
   const [topEnactColor, setTopEnactColor] = useState<'red' | 'black' | null>(
     null,
   )
   const [pendingWin, setPendingWin] = useState<WinResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const resolvedRef = useRef(false)
   const topEnactLock = useRef(false)
   const votesRef = useRef(votes)
+  const castOnServer = useRef(new Set<string>())
   votesRef.current = votes
 
   const board = useMemo(() => toPublicBoard(session), [session])
-  const eligible = useMemo(() => eligibleChancellorIds(session), [session])
+  const eligible = session.eligibleIds
   const prez = president(session)
 
   const unvoted = useMemo(
@@ -58,18 +68,38 @@ export function NominationScreen({
   )
   const currentVoter = unvoted[0]
 
-  function finishVoting(currentVotes: Record<string, boolean>) {
+  async function finishVoting(currentVotes: Record<string, boolean>) {
     if (resolvedRef.current) return
     resolvedRef.current = true
-    const { approved, locked } = resolveElection(
-      session.players.map((p) => p.id),
-      currentVotes,
-    )
-    setLockedReveal(locked)
-    setLastApproved(approved)
-    setPhase('reveal')
-    if (!approved && nomineeId) {
-      onSessionChange(rejectNominee(session, nomineeId))
+    setBusy(true)
+    setError(null)
+    try {
+      for (const [playerId, vote] of Object.entries(currentVotes)) {
+        if (castOnServer.current.has(playerId)) continue
+        await apiCastVote(session.gameId, playerId, vote)
+        castOnServer.current.add(playerId)
+      }
+      const action = await resolveVotes(session.gameId)
+      setLastAction(action)
+      setLockedReveal(action.votes ?? currentVotes)
+      onSessionChange(mergeView(session, action.view))
+
+      const approved = isApprovedResult(action)
+      const topEnacted = Boolean(action.enacted) && !approved
+      setLastApproved(approved)
+
+      if (topEnacted && action.enacted) {
+        setTopEnactColor(action.enacted.color)
+        setPendingWin(winFromView(action.view))
+        setPhase('topEnactNotice')
+        return
+      }
+      setPhase('reveal')
+    } catch (err) {
+      resolvedRef.current = false
+      setError(err instanceof Error ? err.message : 'Failed to resolve votes')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -83,15 +113,29 @@ export function NominationScreen({
     }
     if (topEnactLock.current) return
     topEnactLock.current = true
-    const { session: next, color, win } = enactTopLaw(session)
-    setTopEnactColor(color)
-    setPendingWin(win)
-    setPhase('topEnactNotice')
-    onSessionChange(next)
-  }, [phase, eligible.length, session, onSessionChange])
+    setBusy(true)
+    setError(null)
+    void (async () => {
+      try {
+        const action = await nominate(session.gameId, '')
+        setLastAction(action)
+        onSessionChange(mergeView(session, action.view))
+        if (action.enacted) {
+          setTopEnactColor(action.enacted.color)
+          setPendingWin(winFromView(action.view))
+          setPhase('topEnactNotice')
+        }
+      } catch (err) {
+        topEnactLock.current = false
+        setError(err instanceof Error ? err.message : 'Auto-enact failed')
+      } finally {
+        setBusy(false)
+      }
+    })()
+    // Intentionally only when eligibility empties in nominate phase.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, eligible.length])
 
-  // Each voter gets SECONDS_PER_VOTER. Timeout → Nein for that player, then next.
-  // Timer key is currentVoter so a fresh countdown starts on each pass.
   useEffect(() => {
     if (phase !== 'voting' || !currentVoter) return
     setSecondsLeft(SECONDS_PER_VOTER)
@@ -109,48 +153,74 @@ export function NominationScreen({
         votesRef.current = next
         setVotes(next)
         if (Object.keys(next).length === session.players.length) {
-          finishVotingRef.current(next)
+          void finishVotingRef.current(next)
         }
       }
     }, 200)
     return () => window.clearInterval(id)
   }, [phase, currentVoter?.id, session.players.length])
 
-  function castVote(playerId: string, ja: boolean) {
-    if (votes[playerId] !== undefined || resolvedRef.current) return
+  async function castVoteLocal(playerId: string, ja: boolean) {
+    if (votes[playerId] !== undefined || resolvedRef.current || busy) return
     const next = { ...votes, [playerId]: ja }
     setVotes(next)
     votesRef.current = next
+    try {
+      await apiCastVote(session.gameId, playerId, ja)
+      castOnServer.current.add(playerId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Vote failed')
+      return
+    }
     if (Object.keys(next).length === session.players.length) {
-      finishVoting(next)
+      await finishVoting(next)
     }
   }
 
-  function startVote() {
-    if (!nomineeId) return
-    resolvedRef.current = false
-    setVotes({})
-    votesRef.current = {}
-    setLockedReveal(null)
-    setLastApproved(null)
-    setPendingWin(null)
-    setPhase('voting')
+  async function startVote() {
+    if (!nomineeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const action = await nominate(session.gameId, nomineeId)
+      onSessionChange(mergeView(session, action.view))
+      resolvedRef.current = false
+      castOnServer.current = new Set()
+      setVotes({})
+      votesRef.current = {}
+      setLockedReveal(null)
+      setLastApproved(null)
+      setLastAction(null)
+      setPendingWin(null)
+      setPhase('voting')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nominate failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
   function afterRevealContinue() {
-    if (lastApproved && nomineeId) {
-      const hitlerWin = checkHitlerElected(session, nomineeId)
-      if (hitlerWin) {
-        onWin(hitlerWin)
+    if (lastAction) {
+      const win = winFromView(lastAction.view)
+      if (win) {
+        onWin(win)
         return
       }
-      onGovernmentApproved(nomineeId)
-      return
+      if (
+        lastApproved &&
+        nomineeId &&
+        lastAction.view.phase === 'legislative_president'
+      ) {
+        onGovernmentApproved(nomineeId, lastAction.view)
+        return
+      }
     }
     setNomineeId(null)
     setVotes({})
     setLockedReveal(null)
     setLastApproved(null)
+    setLastAction(null)
     setPhase('nominate')
   }
 
@@ -159,14 +229,10 @@ export function NominationScreen({
       onWin(pendingWin)
       return
     }
-    const win = checkEnactmentWin(session.redsOnTable, session.blacksOnTable)
-    if (win) {
-      onWin(win)
-      return
-    }
     setTopEnactColor(null)
     setPendingWin(null)
     setNomineeId(null)
+    setLastAction(null)
     setPhase('nominate')
   }
 
@@ -191,6 +257,11 @@ export function NominationScreen({
       </header>
 
       <BoardStatus board={board} />
+      {error && (
+        <p className="warning" role="alert">
+          {error}
+        </p>
+      )}
 
       {phase === 'nominate' && eligible.length > 0 && (
         <section className="settings-block">
@@ -221,8 +292,8 @@ export function NominationScreen({
             <button
               type="button"
               className="btn primary"
-              disabled={!nomineeId}
-              onClick={startVote}
+              disabled={!nomineeId || busy}
+              onClick={() => void startVote()}
             >
               Start vote (10s each)
             </button>
@@ -254,14 +325,16 @@ export function NominationScreen({
                 <button
                   type="button"
                   className="btn primary"
-                  onClick={() => castVote(currentVoter.id, true)}
+                  disabled={busy}
+                  onClick={() => void castVoteLocal(currentVoter.id, true)}
                 >
                   Ja
                 </button>
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => castVote(currentVoter.id, false)}
+                  disabled={busy}
+                  onClick={() => void castVoteLocal(currentVoter.id, false)}
                 >
                   Nein
                 </button>
@@ -317,7 +390,8 @@ export function NominationScreen({
             No eligible nominees left. Top LawCard enacted
             {topEnactColor ? (
               <>
-                : <strong className={`law-${topEnactColor}`}>
+                :{' '}
+                <strong className={`law-${topEnactColor}`}>
                   {topEnactColor}
                 </strong>
               </>

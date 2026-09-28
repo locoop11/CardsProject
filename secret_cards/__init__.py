@@ -27,6 +27,11 @@ from secret_cards.model import (
     team_for_role,
 )
 from secret_cards.roles import ROLE_DISTRIBUTION, SUPPORTED_PLAYER_COUNTS, assign_roles
+from secret_cards.views import (
+    legislative_hand,
+    public_view,
+    role_for_player,
+)
 
 __all__ = [
     "ROLE_DISTRIBUTION",
@@ -48,11 +53,14 @@ __all__ = [
     "cast_vote",
     "chancellor_enact",
     "eligible_chancellor_ids",
+    "legislative_hand",
     "nominate_chancellor",
     "president_discard",
+    "public_view",
     "record_action",
     "reds_on_table",
     "resolve_votes",
+    "role_for_player",
     "start_game",
     "team_for_role",
 ]

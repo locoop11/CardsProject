@@ -1,14 +1,11 @@
 import { useState } from 'react'
-import {
-  roleLabel,
-  teamLabel,
-  type RevealedPlayer,
-} from '../roles'
+import type { RoleRevealPlayer } from '../api/types'
+import { roleLabel, teamLabel } from '../roles'
 
 type Phase = 'pass' | 'revealed'
 
 type Props = {
-  players: RevealedPlayer[]
+  players: RoleRevealPlayer[]
   onBackToNames: () => void
   onComplete: () => void
 }

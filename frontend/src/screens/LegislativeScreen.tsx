@@ -1,17 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  applyLegislativeEnact,
+  chancellorEnact,
+  getHand,
+  presidentDiscard,
+} from '../api/client'
+import type { LawCardDto } from '../api/types'
+import {
+  mergeView,
   playerById,
   president,
   toPublicBoard,
+  winFromView,
   type GameSession,
   type WinResult,
 } from '../gameSession'
-import { drawLawCards, type LawCardModel } from '../lawCards'
 import { BoardStatus } from './BoardStatus'
 import { LawCardView } from './LawCardView'
 
 type Phase =
+  | 'loading'
   | 'passPresident'
   | 'presidentDiscard'
   | 'passChancellor'
@@ -33,38 +40,75 @@ export function LegislativeScreen({
   onRoundComplete,
   onWin,
 }: Props) {
-  const [phase, setPhase] = useState<Phase>('passPresident')
-  const [hand, setHand] = useState<LawCardModel[]>(() => drawLawCards(3))
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [hand, setHand] = useState<LawCardDto[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [enactedColor, setEnactedColor] = useState<'red' | 'black' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const board = useMemo(() => toPublicBoard(session), [session])
   const prez = president(session)
   const chancellor = playerById(session, chancellorId)
 
-  function confirmPresidentDiscard() {
-    if (selectedId === null || hand.length !== 3) return
-    setHand(hand.filter((c) => c.id !== selectedId))
-    setSelectedId(null)
-    setPhase('passChancellor')
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await getHand(session.gameId, prez.id)
+        if (cancelled) return
+        setHand(res.cards)
+        setPhase('passPresident')
+      } catch (err) {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load hand')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [session.gameId, prez.id])
+
+  async function confirmPresidentDiscard() {
+    if (selectedId === null || hand.length !== 3 || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const action = await presidentDiscard(session.gameId, selectedId)
+      onSessionChange(mergeView(session, action.view))
+      setHand(action.hand ?? hand.filter((c) => c.id !== selectedId))
+      setSelectedId(null)
+      setPhase('passChancellor')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Discard failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
-  /** Chancellor discards 1 of 2; the remaining LawCard is enacted. */
-  function confirmChancellorDiscard() {
-    if (selectedId === null || hand.length !== 2) return
+  /** Chancellor discards 1 of 2; API enacts the remaining LawCard. */
+  async function confirmChancellorDiscard() {
+    if (selectedId === null || hand.length !== 2 || busy) return
     const remaining = hand.find((c) => c.id !== selectedId)
     if (!remaining) return
-    const { session: next, win } = applyLegislativeEnact(
-      session,
-      remaining.color,
-    )
-    setEnactedColor(remaining.color)
-    onSessionChange(next)
-    if (win) {
-      onWin(win)
-      return
+    setBusy(true)
+    setError(null)
+    try {
+      const action = await chancellorEnact(session.gameId, remaining.id)
+      onSessionChange(mergeView(session, action.view))
+      const color = action.enacted?.color ?? remaining.color
+      setEnactedColor(color)
+      const win = winFromView(action.view)
+      if (win) {
+        onWin(win)
+        return
+      }
+      setPhase('done')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Enact failed')
+    } finally {
+      setBusy(false)
     }
-    setPhase('done')
   }
 
   return (
@@ -72,6 +116,7 @@ export function LegislativeScreen({
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
         <h1>
+          {phase === 'loading' && 'Drawing LawCards…'}
           {phase === 'passPresident' && 'Pass to president'}
           {phase === 'presidentDiscard' && 'President discard'}
           {phase === 'passChancellor' && 'Pass to chancellor'}
@@ -80,10 +125,15 @@ export function LegislativeScreen({
         </h1>
       </header>
 
-      {/* Public board only on pass / done — never beside private hands */}
       {(phase === 'passPresident' ||
         phase === 'passChancellor' ||
         phase === 'done') && <BoardStatus board={board} />}
+
+      {error && (
+        <p className="warning" role="alert">
+          {error}
+        </p>
+      )}
 
       {phase === 'passPresident' && (
         <section className="settings-block reveal-card">
@@ -123,8 +173,8 @@ export function LegislativeScreen({
             <button
               type="button"
               className="btn primary"
-              disabled={selectedId === null}
-              onClick={confirmPresidentDiscard}
+              disabled={selectedId === null || busy}
+              onClick={() => void confirmPresidentDiscard()}
             >
               Discard selected
             </button>
@@ -173,8 +223,8 @@ export function LegislativeScreen({
             <button
               type="button"
               className="btn primary"
-              disabled={selectedId === null}
-              onClick={confirmChancellorDiscard}
+              disabled={selectedId === null || busy}
+              onClick={() => void confirmChancellorDiscard()}
             >
               Discard selected
             </button>

@@ -1,0 +1,45 @@
+"""Unit tests for player-scoped / public views."""
+
+from secret_cards.engine.start import start_game
+from secret_cards.engine.vote import cast_vote, resolve_votes
+from secret_cards.engine.nominate import nominate_chancellor
+from secret_cards.model import Settings
+from secret_cards.views import legislative_hand, public_view, role_for_player
+
+
+def test_public_view_omits_roles() -> None:
+    state = start_game(Settings(player_count=5), ["A", "B", "C", "D", "E"])
+    view = public_view(state, game_id="g1")
+    for player in view["players"]:
+        assert set(player.keys()) == {"id", "name"}
+
+
+def test_role_for_player_only_returns_that_player() -> None:
+    state = start_game(Settings(player_count=5), ["A", "B", "C", "D", "E"])
+    pid = state.players[0].id
+    payload = role_for_player(state, pid)
+    assert payload is not None
+    assert payload["id"] == pid
+    assert payload["role"] == state.players[0].role.value
+
+
+def test_legislative_hand_hidden_from_non_office() -> None:
+    import random
+
+    from secret_cards.engine.nominate import eligible_chancellor_ids
+
+    state = start_game(
+        Settings(player_count=5),
+        ["A", "B", "C", "D", "E"],
+        rng=random.Random(0),
+    )
+    nominee = eligible_chancellor_ids(state)[0]
+    nominate_chancellor(state, nominee)
+    for p in state.players:
+        cast_vote(state, p.id, True)
+    resolve_votes(state)
+
+    president_id = state.players[state.president_index].id
+    other = next(p.id for p in state.players if p.id != president_id)
+    assert legislative_hand(state, president_id) is not None
+    assert legislative_hand(state, other) is None

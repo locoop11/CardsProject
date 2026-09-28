@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react'
+import { createGame, deleteGame } from './api/client'
+import type { RoleRevealPlayer } from './api/types'
 import type { SupportedPlayerCount } from './constants'
 import {
-  advanceAfterGovernment,
-  createSession,
+  mergeView,
+  sessionFromView,
   type GameSession,
   type WinResult,
 } from './gameSession'
-import { assignRoles, type RevealedPlayer } from './roles'
 import { LegislativeScreen } from './screens/LegislativeScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
@@ -31,11 +32,13 @@ export default function App() {
   const [step, setStep] = useState<Step>('settings')
   const [playerCount, setPlayerCount] = useState<SupportedPlayerCount>(5)
   const [names, setNames] = useState<string[]>(() => emptyNames(5))
-  const [players, setPlayers] = useState<RevealedPlayer[]>([])
+  const [roleReveal, setRoleReveal] = useState<RoleRevealPlayer[]>([])
   const [session, setSession] = useState<GameSession | null>(null)
   const [chancellorId, setChancellorId] = useState<string | null>(null)
   const [legislativeKey, setLegislativeKey] = useState(0)
   const [win, setWin] = useState<WinResult | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSessionChange = useCallback((next: GameSession) => {
     setSession(next)
@@ -58,24 +61,47 @@ export default function App() {
     })
   }
 
-  function startRoleReveal(resolved: string[]) {
-    setPlayers(assignRoles(resolved))
-    setStep('roleReveal')
+  async function startRoleReveal(resolved: string[]) {
+    setBusy(true)
+    setError(null)
+    try {
+      const created = await createGame(playerCount, resolved)
+      const rolesById = new Map(
+        created.role_reveal.map((p) => [
+          p.id,
+          { role: p.role, team: p.team },
+        ]),
+      )
+      setRoleReveal(created.role_reveal)
+      setSession(sessionFromView(created.view, rolesById))
+      setStep('roleReveal')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start game')
+    } finally {
+      setBusy(false)
+    }
   }
 
   function beginGame() {
-    setSession(createSession(players))
     setChancellorId(null)
     setWin(null)
     setStep('nomination')
   }
 
-  function playAgain() {
+  async function playAgain() {
+    if (session?.gameId) {
+      try {
+        await deleteGame(session.gameId)
+      } catch {
+        /* session may already be gone */
+      }
+    }
     setStep('settings')
-    setPlayers([])
+    setRoleReveal([])
     setSession(null)
     setChancellorId(null)
     setWin(null)
+    setError(null)
   }
 
   if (step === 'win' && session && win) {
@@ -92,9 +118,6 @@ export default function App() {
         chancellorId={chancellorId}
         onSessionChange={handleSessionChange}
         onRoundComplete={() => {
-          setSession((prev) =>
-            prev ? advanceAfterGovernment(prev, chancellorId) : prev,
-          )
           setChancellorId(null)
           setStep('nomination')
         }}
@@ -112,7 +135,10 @@ export default function App() {
         key={`nom-${session.roundNumber}-${session.presidentIndex}`}
         session={session}
         onSessionChange={handleSessionChange}
-        onGovernmentApproved={(id) => {
+        onGovernmentApproved={(id, nextView) => {
+          setSession((prev) =>
+            prev ? mergeView(prev, nextView) : sessionFromView(nextView),
+          )
           setChancellorId(id)
           setLegislativeKey((k) => k + 1)
           setStep('legislative')
@@ -125,11 +151,24 @@ export default function App() {
     )
   }
 
-  if (step === 'roleReveal') {
+  if (step === 'roleReveal' && roleReveal.length > 0) {
     return (
       <RoleRevealScreen
-        players={players}
-        onBackToNames={() => setStep('names')}
+        players={roleReveal}
+        onBackToNames={() => {
+          void (async () => {
+            if (session?.gameId) {
+              try {
+                await deleteGame(session.gameId)
+              } catch {
+                /* ignore */
+              }
+            }
+            setRoleReveal([])
+            setSession(null)
+            setStep('names')
+          })()
+        }}
         onComplete={beginGame}
       />
     )
@@ -143,6 +182,8 @@ export default function App() {
         onNameChange={handleNameChange}
         onBack={() => setStep('settings')}
         onContinue={startRoleReveal}
+        busy={busy}
+        error={error}
       />
     )
   }

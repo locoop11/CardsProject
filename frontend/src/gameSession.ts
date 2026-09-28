@@ -1,4 +1,5 @@
-import type { RevealedPlayer, Role, Team } from './roles'
+import type { PublicView } from './api/types'
+import type { Role, Team } from './roles'
 
 /** Seconds each player gets to cast Ja/Nein during pass-and-play voting. */
 export const SECONDS_PER_VOTER = 10
@@ -6,7 +7,12 @@ export const RED_WIN = 5
 export const BLACK_WIN = 6
 export const HITLER_ZONE_BLACKS = 3
 
-export type TablePlayer = RevealedPlayer & { id: string }
+export type TablePlayer = {
+  id: string
+  name: string
+  role?: Role
+  team?: Team
+}
 
 export type PublicBoard = {
   roundNumber: number
@@ -19,9 +25,15 @@ export type PublicBoard = {
 export type WinResult = {
   winner: Team
   reason: 'communist_laws' | 'fascist_laws' | 'hitler_elected'
+  players: Array<{
+    name: string
+    role: Role
+    team: Team
+  }>
 }
 
 export type GameSession = {
+  gameId: string
   players: TablePlayer[]
   presidentIndex: number
   roundNumber: number
@@ -29,18 +41,50 @@ export type GameSession = {
   blacksOnTable: number
   rejectedIds: string[]
   previousChancellorId: string | null
+  phase: string
+  eligibleIds: string[]
+  nominatedChancellorId: string | null
+  chancellorId: string | null
 }
 
-export function createSession(players: RevealedPlayer[]): GameSession {
+export function sessionFromView(
+  view: PublicView,
+  rolesById?: Map<string, { role: Role; team: Team }>,
+): GameSession {
   return {
-    players: players.map((p, i) => ({ ...p, id: `p${i}` })),
-    presidentIndex: 0,
-    roundNumber: 1,
-    redsOnTable: 0,
-    blacksOnTable: 0,
-    rejectedIds: [],
-    previousChancellorId: null,
+    gameId: view.game_id,
+    players: view.players.map((p) => {
+      const roleInfo = rolesById?.get(p.id)
+      return {
+        id: p.id,
+        name: p.name,
+        role: roleInfo?.role,
+        team: roleInfo?.team,
+      }
+    }),
+    presidentIndex: view.president_index,
+    roundNumber: view.round_number,
+    redsOnTable: view.reds_on_table,
+    blacksOnTable: view.blacks_on_table,
+    rejectedIds: view.rejected_nominee_ids,
+    previousChancellorId: view.previous_chancellor_id,
+    phase: view.phase,
+    eligibleIds: view.eligible_chancellor_ids,
+    nominatedChancellorId: view.nominated_chancellor_id,
+    chancellorId: view.chancellor_id,
   }
+}
+
+export function mergeView(
+  session: GameSession,
+  view: PublicView,
+): GameSession {
+  const rolesById = new Map(
+    session.players
+      .filter((p) => p.role && p.team)
+      .map((p) => [p.id, { role: p.role!, team: p.team! }]),
+  )
+  return sessionFromView(view, rolesById)
 }
 
 export function president(session: GameSession): TablePlayer {
@@ -52,17 +96,6 @@ export function playerById(
   id: string,
 ): TablePlayer | undefined {
   return session.players.find((p) => p.id === id)
-}
-
-export function eligibleChancellorIds(session: GameSession): string[] {
-  const barred = new Set<string>([
-    president(session).id,
-    ...session.rejectedIds,
-  ])
-  if (session.previousChancellorId) {
-    barred.add(session.previousChancellorId)
-  }
-  return session.players.filter((p) => !barred.has(p.id)).map((p) => p.id)
 }
 
 export function toPublicBoard(session: GameSession): PublicBoard {
@@ -78,115 +111,16 @@ export function toPublicBoard(session: GameSession): PublicBoard {
   }
 }
 
-export function checkEnactmentWin(
-  reds: number,
-  blacks: number,
-): WinResult | null {
-  if (reds >= RED_WIN) {
-    return { winner: 'communist', reason: 'communist_laws' }
+export function winFromView(view: PublicView): WinResult | null {
+  if (view.phase !== 'game_over' || !view.winner || !view.win_reason) {
+    return null
   }
-  if (blacks >= BLACK_WIN) {
-    return { winner: 'fascist', reason: 'fascist_laws' }
-  }
-  return null
-}
-
-export function checkHitlerElected(
-  session: GameSession,
-  chancellorId: string,
-): WinResult | null {
-  if (session.blacksOnTable < HITLER_ZONE_BLACKS) return null
-  const ch = playerById(session, chancellorId)
-  if (ch?.role === 'hitler') {
-    return { winner: 'fascist', reason: 'hitler_elected' }
-  }
-  return null
-}
-
-/** Resolve votes: missing = Nein; approve only on strict Ja majority. */
-export function resolveElection(
-  playerIds: string[],
-  votes: Record<string, boolean>,
-): { approved: boolean; ja: number; nein: number; locked: Record<string, boolean> } {
-  const locked: Record<string, boolean> = {}
-  for (const id of playerIds) {
-    locked[id] = votes[id] ?? false
-  }
-  const ja = Object.values(locked).filter(Boolean).length
-  const nein = playerIds.length - ja
-  return { approved: ja > nein, ja, nein, locked }
-}
-
-export function rejectNominee(
-  session: GameSession,
-  nomineeId: string,
-): GameSession {
-  const rejectedIds = session.rejectedIds.includes(nomineeId)
-    ? session.rejectedIds
-    : [...session.rejectedIds, nomineeId]
-  return { ...session, rejectedIds }
-}
-
-/** Top-of-deck enact: for UI stub, flip a coin for color until Phase 4. */
-export function enactTopLaw(session: GameSession): {
-  session: GameSession
-  color: 'red' | 'black'
-  win: WinResult | null
-} {
-  const color: 'red' | 'black' = Math.random() < 0.5 ? 'red' : 'black'
-  const reds = session.redsOnTable + (color === 'red' ? 1 : 0)
-  const blacks = session.blacksOnTable + (color === 'black' ? 1 : 0)
-  const win = checkEnactmentWin(reds, blacks)
-  const next = advanceRound(
-    {
-      ...session,
-      redsOnTable: reds,
-      blacksOnTable: blacks,
-    },
-    { clearChancellorTermLimit: true },
-  )
-  return { session: next, color, win }
-}
-
-export function advanceRound(
-  session: GameSession,
-  opts: { clearChancellorTermLimit: boolean; newChancellorId?: string },
-): GameSession {
-  const n = session.players.length
+  const reason = view.win_reason as WinResult['reason']
   return {
-    ...session,
-    presidentIndex: (session.presidentIndex + 1) % n,
-    roundNumber: session.roundNumber + 1,
-    rejectedIds: [],
-    previousChancellorId: opts.clearChancellorTermLimit
-      ? null
-      : (opts.newChancellorId ?? session.previousChancellorId),
+    winner: view.winner as Team,
+    reason,
+    players: view.result?.players ?? [],
   }
-}
-
-/** Apply an enacted LawCard to the tracks; does not advance the round yet. */
-export function applyLegislativeEnact(
-  session: GameSession,
-  color: 'red' | 'black',
-): { session: GameSession; win: WinResult | null } {
-  const reds = session.redsOnTable + (color === 'red' ? 1 : 0)
-  const blacks = session.blacksOnTable + (color === 'black' ? 1 : 0)
-  const win = checkEnactmentWin(reds, blacks)
-  return {
-    session: { ...session, redsOnTable: reds, blacksOnTable: blacks },
-    win,
-  }
-}
-
-/** After a successful government enacts a law and the UI leaves legislative. */
-export function advanceAfterGovernment(
-  session: GameSession,
-  chancellorId: string,
-): GameSession {
-  return advanceRound(session, {
-    clearChancellorTermLimit: false,
-    newChancellorId: chancellorId,
-  })
 }
 
 export type { Role, Team }

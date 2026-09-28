@@ -1,4 +1,4 @@
-/** Mirrors secret_cards.roles / model Team & Role (client stub until Phase 4). */
+/** Role/team labels and constants. Assignment lives on the Python engine. */
 
 export type Role = 'communist' | 'fascist' | 'hitler'
 export type Team = 'communist' | 'fascist'
@@ -13,12 +13,6 @@ export const ROLE_DISTRIBUTION: Record<number, readonly [number, number]> = {
   10: [6, 4],
 }
 
-export type RevealedPlayer = {
-  name: string
-  role: Role
-  team: Team
-}
-
 export function teamForRole(role: Role): Team {
   return role === 'communist' ? 'communist' : 'fascist'
 }
@@ -31,33 +25,4 @@ export function roleLabel(role: Role): string {
 
 export function teamLabel(team: Team): string {
   return team === 'communist' ? 'Communist' : 'Fascist'
-}
-
-function shuffle<T>(items: T[]): T[] {
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
-
-/** Assign shuffled roles matching the Python engine distribution. */
-export function assignRoles(playerNames: string[]): RevealedPlayer[] {
-  const dist = ROLE_DISTRIBUTION[playerNames.length]
-  if (!dist) {
-    throw new Error(`Unsupported player count: ${playerNames.length}`)
-  }
-  const [communistCount, fascistIncludingHitler] = dist
-  const fascistMembers = fascistIncludingHitler - 1
-  const roles: Role[] = [
-    ...Array.from({ length: communistCount }, () => 'communist' as const),
-    ...Array.from({ length: fascistMembers }, () => 'fascist' as const),
-    'hitler',
-  ]
-  const shuffled = shuffle(roles)
-  return playerNames.map((name, i) => {
-    const role = shuffled[i]!
-    return { name, role, team: teamForRole(role) }
-  })
 }
