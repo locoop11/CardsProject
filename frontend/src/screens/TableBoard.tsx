@@ -76,12 +76,11 @@ export function TableBoard({
   const revealingVotes = Boolean(voteBorders)
 
   return (
-    <section className="table-board" aria-label="Game table">
+    <section
+      className="table-board"
+      aria-label={`Game table, round ${roundNumber}`}
+    >
       <div className="table-felt">
-        <p className="table-meta">
-          <span>Round {roundNumber}</span>
-        </p>
-
         {voteOutcome && (
           <div className="table-vote-banner" aria-live="polite">
             {voteOutcome === 'approved' && (

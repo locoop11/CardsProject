@@ -125,24 +125,8 @@ export function LegislativeScreen({
     (phase === 'presidentSelect' || phase === 'chancellorSelect') &&
     pendingDiscardId === null
 
-  const phaseTitle =
-    phase === 'loading'
-      ? 'Drawing LawCards…'
-      : phase === 'presidentSelect' || phase === 'presidentFaceDown'
-        ? 'President discard'
-        : phase === 'passChancellor'
-          ? 'Pass to chancellor'
-          : phase === 'chancellorSelect'
-            ? 'Chancellor discard'
-            : 'Law enacted'
-
   return (
     <main className="screen table-layout legislative-screen">
-      <header className="screen-header">
-        <p className="brand">Secret Cards</p>
-        <h1>{phaseTitle}</h1>
-      </header>
-
       <TableBoard
         players={session.players}
         presidentId={prez.id}

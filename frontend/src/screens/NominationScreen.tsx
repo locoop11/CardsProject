@@ -295,22 +295,8 @@ export function NominationScreen({
         : 'rejected'
       : null
 
-  const phaseTitle =
-    phase === 'nominate'
-      ? 'Nomination'
-      : phase === 'voting'
-        ? 'Voting'
-        : phase === 'reveal'
-          ? 'Vote results'
-          : 'Top Law enacted'
-
   return (
     <main className="screen table-layout nomination-screen">
-      <header className="screen-header">
-        <p className="brand">Secret Cards</p>
-        <h1>{phaseTitle}</h1>
-      </header>
-
       <TableBoard
         players={session.players}
         presidentId={prez.id}
