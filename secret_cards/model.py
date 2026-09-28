@@ -59,7 +59,7 @@ class Settings:
     bar_previous_chancellor: bool = True
     bar_previous_president: bool = False
     clear_term_limits_on_auto_enact: bool = True
-    voting_window_seconds: int = 5
+    voting_window_seconds: int = 10
 
 
 @dataclass

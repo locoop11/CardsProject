@@ -86,4 +86,4 @@ def test_settings_defaults() -> None:
     assert settings.bar_previous_chancellor is True
     assert settings.bar_previous_president is False
     assert settings.clear_term_limits_on_auto_enact is True
-    assert settings.voting_window_seconds == 5
+    assert settings.voting_window_seconds == 10

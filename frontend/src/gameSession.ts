@@ -1,8 +1,7 @@
 import type { RevealedPlayer, Role, Team } from './roles'
 
-/** Pass-and-play needs enough time to hand the device around.
- *  Engine Settings.voting_window_seconds stays 5 for future simultaneous play. */
-export const VOTING_WINDOW_SECONDS = 60
+/** Seconds each player gets to cast Ja/Nein during pass-and-play voting. */
+export const SECONDS_PER_VOTER = 10
 export const RED_WIN = 5
 export const BLACK_WIN = 6
 export const HITLER_ZONE_BLACKS = 3

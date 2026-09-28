@@ -186,7 +186,8 @@ class Settings:
     bar_previous_chancellor: bool = True
     bar_previous_president: bool = False  # off in v1; only current president is barred by office
     clear_term_limits_on_auto_enact: bool = True  # clears previous_chancellor_id after top-card enact
-    voting_window_seconds: int = 5  # timed group vote once voting is started
+    voting_window_seconds: int = 10  # seconds each player has to vote (pass-and-play)
+
 
 
 @dataclass
@@ -252,10 +253,10 @@ A player may be nominated if they are **not**:
 
 ### Voting
 - Nomination is public.
-- Someone starts the vote (UI button). Then **everyone has `voting_window_seconds` (default 5)** to cast Ja/Nein.
-- After the window ends, votes are **revealed**.
+- Someone starts the vote (UI button). Then **each player has `voting_window_seconds` (default 10)** to cast Ja/Nein in turn (pass-and-play).
+- After every player has voted or timed out, votes are **revealed**.
 - A player **cannot change** their vote once cast.
-- Players who do not vote in time: treat as **Nein** (document in code; changeable later via settings).
+- Players who do not vote in their window: treat as **Nein** (document in code; changeable later via settings).
 - Government **approved** only on **strict majority** Ja (`ja_count > nein_count`). Ties and Nein-majority = rejected.
 - On reject: add the nominee to `rejected_nominee_ids`, clear nomination/votes, stay in `NOMINATION` with the **same** president.
 - Rejected votes only narrow who can still be nominated. They do **not** by themselves enact a LawCard. Enactment after total rejection is the separate top-of-deck path below.
@@ -301,7 +302,7 @@ game start
   → (no eligible nominee?)
         → draw top 1 LawCard → enact to table → win check
         → (else) advance round → NOMINATION
-  → nominate → VOTING (5s window)
+  → nominate → VOTING (10s per player, pass-and-play)
   → rejected → rejected_nominee_ids += nominee → NOMINATION (same president)
         → (if now no eligible nominees) → top-of-deck enact path above
   → approved → leader-elected win check
@@ -356,7 +357,7 @@ Each public engine action should append a serializable entry to `state.action_lo
 ### Task 2.3 — Voting
 
 `cast_vote(state: GameState, player_id: str, vote: bool) -> GameState`  
-`resolve_votes(state: GameState) -> GameState`  # when the 5s window ends (timer is frontend; engine is pure)
+`resolve_votes(state: GameState) -> GameState`  # when all player windows end (timer is frontend; engine is pure)
 
 - Valid only in `VOTING`.
 - First vote is final — **no overwrites**.
@@ -447,10 +448,11 @@ UI copy uses **Law** / **LawCard** / **LawCards**, not “policy”.
 
 ### Task 3.4 — Voting (pass-and-play + timed window)
 - Nomination visible to the group.
-- Start-vote control begins the **5 second** window.
-- During the window, inputs stay private (pass-and-play friendly).
-- Votes lock on cast; after 5s, **reveal all votes** (individual + totals).
-- Non-voters count as Nein at resolve.
+- Start-vote control begins pass-and-play voting: **10 seconds per player**.
+- During each player's window, their input stays private (pass-and-play friendly).
+- Votes lock on cast; if a player’s 10s expires, that vote is Nein and the device passes on.
+- After all players have voted or timed out, **reveal all votes** (individual + totals).
+- Non-voters (timeout) count as Nein at resolve.
 - UI must support the path where nominations keep failing until top-of-deck LawCard enact (no assumption that a government will pass).
 
 ### Task 3.5 — Legislative screens
@@ -508,7 +510,7 @@ Manual: real playtests, log edge cases, visual polish. Not code-precise.
 | Previous president bar | Off in v1 |
 | Last chancellor bar | On in v1; cleared after top-of-deck enact by default |
 | Rejected nominees | Barred for rest of round; list cleared on presidency rotate |
-| Voting | 5s window after start; no vote changes; reveal after window; missing = Nein |
+| Voting | 10s per player (pass-and-play); no vote changes; reveal after all done; missing/timeout = Nein |
 | Discards | Return to `law_deck` (shuffle); enacted LawCards stay on `law_table` |
 | Settings extras | Present on `Settings` for future toggles; no full settings product in v1 |
 

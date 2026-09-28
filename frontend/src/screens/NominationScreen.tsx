@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  VOTING_WINDOW_SECONDS,
+  SECONDS_PER_VOTER,
   checkEnactmentWin,
   checkHitlerElected,
   eligibleChancellorIds,
@@ -33,7 +33,7 @@ export function NominationScreen({
   const [phase, setPhase] = useState<Phase>('nominate')
   const [nomineeId, setNomineeId] = useState<string | null>(null)
   const [votes, setVotes] = useState<Record<string, boolean>>({})
-  const [secondsLeft, setSecondsLeft] = useState(VOTING_WINDOW_SECONDS)
+  const [secondsLeft, setSecondsLeft] = useState(SECONDS_PER_VOTER)
   const [lockedReveal, setLockedReveal] = useState<Record<
     string,
     boolean
@@ -90,24 +90,31 @@ export function NominationScreen({
     onSessionChange(next)
   }, [phase, eligible.length, session, onSessionChange])
 
-  // Timer owns expiry → resolve. Do not watch secondsLeft===0 (stale 0 from a
-  // previous round would resolve the next vote instantly as all Nein).
+  // Each voter gets SECONDS_PER_VOTER. Timeout → Nein for that player, then next.
+  // Timer key is currentVoter so a fresh countdown starts on each pass.
   useEffect(() => {
-    if (phase !== 'voting') return
-    resolvedRef.current = false
-    setSecondsLeft(VOTING_WINDOW_SECONDS)
+    if (phase !== 'voting' || !currentVoter) return
+    setSecondsLeft(SECONDS_PER_VOTER)
+    const voterId = currentVoter.id
     const started = Date.now()
     const id = window.setInterval(() => {
       const elapsed = Math.floor((Date.now() - started) / 1000)
-      const left = Math.max(0, VOTING_WINDOW_SECONDS - elapsed)
+      const left = Math.max(0, SECONDS_PER_VOTER - elapsed)
       setSecondsLeft(left)
       if (left === 0) {
         window.clearInterval(id)
-        finishVotingRef.current(votesRef.current)
+        if (resolvedRef.current) return
+        if (votesRef.current[voterId] !== undefined) return
+        const next = { ...votesRef.current, [voterId]: false }
+        votesRef.current = next
+        setVotes(next)
+        if (Object.keys(next).length === session.players.length) {
+          finishVotingRef.current(next)
+        }
       }
     }, 200)
     return () => window.clearInterval(id)
-  }, [phase])
+  }, [phase, currentVoter?.id, session.players.length])
 
   function castVote(playerId: string, ja: boolean) {
     if (votes[playerId] !== undefined || resolvedRef.current) return
@@ -121,7 +128,9 @@ export function NominationScreen({
 
   function startVote() {
     if (!nomineeId) return
+    resolvedRef.current = false
     setVotes({})
+    votesRef.current = {}
     setLockedReveal(null)
     setLastApproved(null)
     setPendingWin(null)
@@ -215,7 +224,7 @@ export function NominationScreen({
               disabled={!nomineeId}
               onClick={startVote}
             >
-              Start {VOTING_WINDOW_SECONDS}s vote
+              Start vote (10s each)
             </button>
           </div>
         </section>
@@ -223,7 +232,11 @@ export function NominationScreen({
 
       {phase === 'voting' && nominee && (
         <section className="settings-block reveal-card">
-          <p className="reveal-progress">{secondsLeft}s left</p>
+          <p className="reveal-progress">
+            {currentVoter
+              ? `${secondsLeft}s for ${currentVoter.name}`
+              : 'Resolving…'}
+          </p>
           <p className="reveal-prompt">
             Government: <strong>{prez.name}</strong> +{' '}
             <strong>{nominee.name}</strong>
@@ -233,7 +246,10 @@ export function NominationScreen({
               <p className="reveal-prompt">
                 Pass to <strong>{currentVoter.name}</strong> to vote
               </p>
-              <p className="hint">Others look away. Vote locks when cast.</p>
+              <p className="hint">
+                Others look away. {SECONDS_PER_VOTER}s to vote; timeout counts
+                as Nein.
+              </p>
               <div className="vote-actions">
                 <button
                   type="button"
