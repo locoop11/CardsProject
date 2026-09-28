@@ -1,13 +1,22 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { SupportedPlayerCount } from './constants'
+import { createSession, type GameSession, type WinResult } from './gameSession'
 import { assignRoles, type RevealedPlayer } from './roles'
+import { LegislativeStubScreen } from './screens/LegislativeStubScreen'
 import { NamesScreen } from './screens/NamesScreen'
-import { NominationStubScreen } from './screens/NominationStubScreen'
+import { NominationScreen } from './screens/NominationScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { WinScreen } from './screens/WinScreen'
 import './App.css'
 
-type Step = 'settings' | 'names' | 'roleReveal' | 'nomination'
+type Step =
+  | 'settings'
+  | 'names'
+  | 'roleReveal'
+  | 'nomination'
+  | 'legislative'
+  | 'win'
 
 function emptyNames(count: number): string[] {
   return Array.from({ length: count }, () => '')
@@ -17,8 +26,14 @@ export default function App() {
   const [step, setStep] = useState<Step>('settings')
   const [playerCount, setPlayerCount] = useState<SupportedPlayerCount>(5)
   const [names, setNames] = useState<string[]>(() => emptyNames(5))
-  const [resolvedNames, setResolvedNames] = useState<string[]>([])
   const [players, setPlayers] = useState<RevealedPlayer[]>([])
+  const [session, setSession] = useState<GameSession | null>(null)
+  const [chancellorId, setChancellorId] = useState<string | null>(null)
+  const [win, setWin] = useState<WinResult | null>(null)
+
+  const handleSessionChange = useCallback((next: GameSession) => {
+    setSession(next)
+  }, [])
 
   function handlePlayerCountChange(count: SupportedPlayerCount) {
     setPlayerCount(count)
@@ -38,16 +53,54 @@ export default function App() {
   }
 
   function startRoleReveal(resolved: string[]) {
-    setResolvedNames(resolved)
     setPlayers(assignRoles(resolved))
     setStep('roleReveal')
   }
 
-  if (step === 'nomination') {
+  function beginGame() {
+    setSession(createSession(players))
+    setChancellorId(null)
+    setWin(null)
+    setStep('nomination')
+  }
+
+  function playAgain() {
+    setStep('settings')
+    setPlayers([])
+    setSession(null)
+    setChancellorId(null)
+    setWin(null)
+  }
+
+  if (step === 'win' && session && win) {
     return (
-      <NominationStubScreen
-        playerNames={resolvedNames}
-        onBack={() => setStep('roleReveal')}
+      <WinScreen session={session} win={win} onPlayAgain={playAgain} />
+    )
+  }
+
+  if (step === 'legislative' && session && chancellorId) {
+    return (
+      <LegislativeStubScreen
+        session={session}
+        chancellorId={chancellorId}
+        onBackToNomination={() => setStep('nomination')}
+      />
+    )
+  }
+
+  if (step === 'nomination' && session) {
+    return (
+      <NominationScreen
+        session={session}
+        onSessionChange={handleSessionChange}
+        onGovernmentApproved={(id) => {
+          setChancellorId(id)
+          setStep('legislative')
+        }}
+        onWin={(result) => {
+          setWin(result)
+          setStep('win')
+        }}
       />
     )
   }
@@ -57,7 +110,7 @@ export default function App() {
       <RoleRevealScreen
         players={players}
         onBackToNames={() => setStep('names')}
-        onComplete={() => setStep('nomination')}
+        onComplete={beginGame}
       />
     )
   }

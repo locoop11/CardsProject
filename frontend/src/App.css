@@ -219,6 +219,11 @@ body {
   border-color: var(--ring);
 }
 
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .reveal-card {
   text-align: center;
   gap: 0.65rem;
@@ -262,10 +267,134 @@ body {
   font-weight: 600;
 }
 
-.team-line.team-communist {
+.team-line.team-communist,
+.team-communist {
   color: var(--accent);
 }
 
-.team-line.team-fascist {
+.team-line.team-fascist,
+.team-fascist {
   color: var(--ink-muted);
+}
+
+.lede.tight {
+  margin: 0;
+}
+
+.nested-actions {
+  margin-top: 0.5rem;
+}
+
+.nominee-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.vote-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.vote-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.vote-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(26, 31, 38, 0.08);
+  font-size: 0.95rem;
+}
+
+.board-status {
+  background: var(--surface);
+  border: 1px solid rgba(26, 31, 38, 0.08);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.board-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.track {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.track-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.track-slots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.slot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+  border: 1.5px solid rgba(26, 31, 38, 0.2);
+  background: var(--paper);
+}
+
+.slot.filled.red {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.slot.filled.black {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.track-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  min-width: 2.25rem;
+  text-align: right;
+}
+
+.board-rejected {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  line-height: 1.35;
+}
+
+.law-red {
+  color: var(--accent);
+}
+
+.law-black {
+  color: var(--ink);
 }
