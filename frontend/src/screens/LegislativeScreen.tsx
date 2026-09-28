@@ -119,6 +119,7 @@ export function LegislativeScreen({
   const showCardOverlay =
     phase === 'presidentSelect' ||
     phase === 'presidentFaceDown' ||
+    phase === 'passChancellor' ||
     phase === 'chancellorSelect'
 
   const cardsInteractive =
@@ -148,7 +149,8 @@ export function LegislativeScreen({
           <p className="table-card-overlay-hint">
             {phase === 'presidentSelect' &&
               `${prez.name}: tap a LawCard to discard`}
-            {phase === 'presidentFaceDown' && 'Cards face down — ready to pass'}
+            {(phase === 'presidentFaceDown' || phase === 'passChancellor') &&
+              'LawCards face down — pass the phone'}
             {phase === 'chancellorSelect' &&
               `${chancellor?.name ?? 'Chancellor'}: tap a LawCard to discard`}
           </p>
@@ -190,8 +192,9 @@ export function LegislativeScreen({
 
       {phase === 'presidentFaceDown' && (
         <ConfirmOverlay
+          light
           title={`Pass the phone to ${chancellor?.name ?? 'chancellor'}?`}
-          hint="Keep the remaining LawCards face down until they are ready."
+          hint="Leave the two LawCards face down on the table."
           confirmLabel="Pass phone"
           onConfirm={() => {
             setCardsFaceDown(true)
@@ -202,9 +205,10 @@ export function LegislativeScreen({
 
       {phase === 'passChancellor' && (
         <ConfirmOverlay
+          light
           title={`Ready, ${chancellor?.name ?? 'chancellor'}?`}
-          hint="Others look away before the LawCards are revealed."
-          confirmLabel="Reveal hand"
+          hint="Others look away, then turn the LawCards face up."
+          confirmLabel="Turn face up"
           onConfirm={() => {
             setCardsFaceDown(false)
             setSelectedId(null)

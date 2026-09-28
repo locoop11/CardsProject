@@ -7,6 +7,8 @@ type Props = {
   onCancel?: () => void
   confirmDisabled?: boolean
   busy?: boolean
+  /** Transparent backdrop so table/cards stay visible underneath. */
+  light?: boolean
 }
 
 export function ConfirmOverlay({
@@ -18,9 +20,14 @@ export function ConfirmOverlay({
   onCancel,
   confirmDisabled = false,
   busy = false,
+  light = false,
 }: Props) {
   return (
-    <div className="table-overlay" role="dialog" aria-modal="true">
+    <div
+      className={light ? 'table-overlay table-overlay-light' : 'table-overlay'}
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="table-overlay-panel">
         <p className="table-overlay-title">{title}</p>
         {hint && <p className="table-overlay-hint">{hint}</p>}
