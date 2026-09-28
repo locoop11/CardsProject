@@ -677,12 +677,13 @@ body {
   position: absolute;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.28rem;
   transform: translate(-50%, -50%);
   border: 2.5px solid transparent;
-  border-radius: 8px;
-  padding: 0.15rem;
+  border-radius: 10px;
+  padding: 0.2rem;
   background: transparent;
   font: inherit;
   color: inherit;
@@ -700,6 +701,7 @@ button.table-seat:disabled {
 
 .seat-hit {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.28rem;
   margin: 0;
@@ -714,13 +716,13 @@ button.table-seat:disabled {
 
 .table-seat.is-eligible .seat-name-card {
   box-shadow:
-    0 0 0 1.5px rgba(255, 255, 255, 0.55),
-    0 2px 8px rgba(0, 0, 0, 0.28);
+    0 0 0 1.5px rgba(255, 255, 255, 0.65),
+    0 3px 10px rgba(0, 0, 0, 0.28);
 }
 
 .table-seat.is-selected .seat-name-card {
   outline: 2px solid #fff;
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 .table-seat.vote-ja .seat-role-card,
@@ -728,7 +730,7 @@ button.table-seat:disabled {
   border-color: var(--vote-ja);
   box-shadow:
     0 0 0 2px var(--vote-ja),
-    0 2px 8px rgba(0, 0, 0, 0.35);
+    0 3px 10px rgba(0, 0, 0, 0.35);
   opacity: 1;
 }
 
@@ -737,29 +739,32 @@ button.table-seat:disabled {
   border-color: var(--vote-nein);
   box-shadow:
     0 0 0 2px var(--vote-nein),
-    0 2px 8px rgba(0, 0, 0, 0.35);
+    0 3px 10px rgba(0, 0, 0, 0.35);
   opacity: 1;
 }
 
 .seat-role-card {
-  width: 2.05rem;
-  height: 2.85rem;
-  border-radius: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  width: 2.55rem;
+  height: 3.6rem;
+  border-radius: 0.35rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
   background:
+    radial-gradient(circle at 50% 40%, #2a4a6a 0%, #1a2a3c 70%),
     repeating-linear-gradient(
       -18deg,
       #1e2a36 0 3px,
       #243242 3px 6px
     );
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.28),
+    0 6px 14px rgba(0, 0, 0, 0.22);
   flex-shrink: 0;
   overflow: hidden;
 }
 
 .seat-role-card.is-revealed {
-  background: transparent;
-  border-color: rgba(255, 255, 255, 0.75);
+  background: #fffef8;
+  border-color: rgba(255, 255, 255, 0.85);
   animation: role-flip-in 0.55s ease-out both;
 }
 
@@ -770,51 +775,79 @@ button.table-seat:disabled {
 
 @keyframes role-flip-in {
   from {
-    transform: rotateY(90deg);
+    transform: rotateY(90deg) scale(0.92);
     opacity: 0.35;
   }
   to {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scale(1);
     opacity: 1;
   }
 }
 
 .seat-name-card {
-  min-width: 3.2rem;
-  max-width: 4.4rem;
-  min-height: 2.85rem;
-  border-radius: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
-  background: linear-gradient(165deg, #f4efe6 0%, #e2d8c8 100%);
+  width: 5.25rem;
+  min-width: 5.25rem;
+  max-width: 5.25rem;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  box-sizing: border-box;
+  border-radius: 0.45rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.72);
+  background:
+    linear-gradient(165deg, #fffdf7 0%, #f3ead8 55%, #e8dcc8 100%);
   color: #1a1f26;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.1rem;
-  padding: 0.25rem 0.3rem;
+  gap: 0.08rem;
+  padding: 0.28rem 0.4rem;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.22),
+    0 5px 12px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
 }
 
 .seat-name {
   font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  line-height: 1.15;
-  word-break: break-word;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .seat-office {
-  font-size: 0.5rem;
+  font-size: 0.55rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #9e1b2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1;
 }
 
 .seat-office.muted {
-  color: #6a7380;
+  color: #5c6673;
+}
+
+.seat-office.seat-role-communist {
+  color: #9e1b2e;
+}
+
+.seat-office.seat-role-fascist {
+  color: #1a1f26;
+}
+
+.seat-office.seat-role-hitler {
+  color: #8a6b12;
 }
 
 .table-seat.is-president .seat-name-card {
@@ -857,26 +890,76 @@ button.table-seat:disabled {
   width: min(16rem, calc(100% - 2rem));
 }
 
-/* Slightly taller seats when there's room (large phones / tablets) */
+/* Slightly larger seats when there's room (large phones / tablets) */
 @media (min-height: 740px) {
   .seat-role-card {
-    width: 2.35rem;
-    height: 3.25rem;
+    width: 2.85rem;
+    height: 4.05rem;
   }
 
   .seat-name-card {
-    min-width: 3.6rem;
-    max-width: 5rem;
-    min-height: 3.25rem;
+    width: 5.6rem;
+    min-width: 5.6rem;
+    max-width: 5.6rem;
+    height: 2.5rem;
+    min-height: 2.5rem;
   }
 
   .seat-name {
-    font-size: 0.75rem;
+    font-size: 0.84rem;
+  }
+
+  .seat-office {
+    font-size: 0.58rem;
   }
 
   .table-law-slot {
     width: 3.35rem;
     height: 4.8rem;
+  }
+}
+
+/* End-game: bigger revealed role cards + name plaques */
+.table-board.roles-revealed .seat-role-card {
+  width: 3.1rem;
+  height: 4.4rem;
+  border-radius: 0.4rem;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.28),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+}
+
+.table-board.roles-revealed .seat-name-card {
+  width: 5.6rem;
+  min-width: 5.6rem;
+  max-width: 5.6rem;
+  height: 2.55rem;
+  min-height: 2.55rem;
+}
+
+.table-board.roles-revealed .seat-name {
+  font-size: 0.84rem;
+}
+
+.table-board.roles-revealed .seat-office {
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+}
+
+@media (min-height: 740px) {
+  .table-board.roles-revealed .seat-role-card {
+    width: 3.45rem;
+    height: 4.9rem;
+  }
+
+  .table-board.roles-revealed .seat-name-card {
+    width: 5.9rem;
+    min-width: 5.9rem;
+    max-width: 5.9rem;
+  }
+
+  .table-board.roles-revealed .seat-name {
+    font-size: 0.9rem;
   }
 }
 

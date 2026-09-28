@@ -28,14 +28,18 @@ type Props = {
 }
 
 /** Place seats evenly around a rounded-rectangle perimeter (phone-friendly). */
-function seatPosition(index: number, total: number): {
+function seatPosition(
+  index: number,
+  total: number,
+  revealRoles = false,
+): {
   left: string
   top: string
 } {
-  const insetX = 12
-  // Keep mid-top / mid-bottom seats clear of the center law rectangle.
-  const top = 3.5
-  const bottom = 96.5
+  // Insets leave room for stacked role+name (centered on the point).
+  const insetX = revealRoles ? 16 : 14
+  const top = revealRoles ? 11 : 9
+  const bottom = revealRoles ? 89 : 91
   const left = insetX
   const right = 100 - insetX
   const width = right - left
@@ -109,7 +113,9 @@ export function TableBoard({
   }
   return (
     <section
-      className="table-board"
+      className={
+        revealRoles ? 'table-board roles-revealed' : 'table-board'
+      }
       aria-label={`Game table, round ${roundNumber}`}
     >
       <div className="table-felt">
@@ -207,7 +213,7 @@ export function TableBoard({
 
         <ul className="table-seats" aria-label="Players">
           {players.map((player, index) => {
-            const pos = seatPosition(index, players.length)
+            const pos = seatPosition(index, players.length, revealRoles)
             const isPresident = player.id === presidentId
             const isBarred =
               rejected.has(player.id) || player.id === previousChancellorId
@@ -256,9 +262,11 @@ export function TableBoard({
                   {revealRoles && player.role ? (
                     <span
                       className={
-                        player.role === 'communist'
-                          ? 'seat-office muted'
-                          : 'seat-office'
+                        player.role === 'hitler'
+                          ? 'seat-office seat-role-hitler'
+                          : player.role === 'fascist'
+                            ? 'seat-office seat-role-fascist'
+                            : 'seat-office seat-role-communist'
                       }
                     >
                       {roleLabel(player.role)}
