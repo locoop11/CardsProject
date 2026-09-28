@@ -14,14 +14,6 @@ export type TablePlayer = {
   team?: Team
 }
 
-export type PublicBoard = {
-  roundNumber: number
-  redsOnTable: number
-  blacksOnTable: number
-  presidentName: string
-  rejectedNames: string[]
-}
-
 export type WinResult = {
   winner: Team
   reason: 'communist_laws' | 'fascist_laws' | 'hitler_elected'
@@ -96,19 +88,6 @@ export function playerById(
   id: string,
 ): TablePlayer | undefined {
   return session.players.find((p) => p.id === id)
-}
-
-export function toPublicBoard(session: GameSession): PublicBoard {
-  const rejectedNames = session.rejectedIds.map(
-    (id) => playerById(session, id)?.name ?? id,
-  )
-  return {
-    roundNumber: session.roundNumber,
-    redsOnTable: session.redsOnTable,
-    blacksOnTable: session.blacksOnTable,
-    presidentName: president(session).name,
-    rejectedNames,
-  }
 }
 
 export function winFromView(view: PublicView): WinResult | null {

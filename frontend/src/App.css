@@ -40,6 +40,10 @@ body {
   padding: 1.5rem 1rem 3rem;
 }
 
+#root:has(.table-layout) {
+  padding: 0.75rem 0.55rem 1.25rem;
+}
+
 .screen {
   width: min(28rem, 100%);
   display: flex;
@@ -460,4 +464,221 @@ body {
   font-size: 0.7rem;
   font-weight: 600;
   opacity: 0.9;
+}
+
+/* --- Felt table board (pass-and-play public view) --- */
+
+.screen.table-layout {
+  width: min(26rem, 100%);
+  gap: 0.9rem;
+}
+
+.table-board {
+  width: 100%;
+}
+
+.table-felt {
+  position: relative;
+  width: 100%;
+  /* Phone portrait: full column width × most of the viewport height */
+  height: min(68dvh, 34rem);
+  margin: 0 auto;
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+      ellipse 90% 75% at 50% 40%,
+      #2f6b45 0%,
+      #1a4a2e 55%,
+      #123524 100%
+    );
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.12),
+    inset 0 0 40px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(18, 28, 22, 0.35);
+  overflow: hidden;
+}
+
+.table-meta {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  margin: 0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table-oval {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 78%;
+  height: 28%;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-radius: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.law-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.law-row-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.law-row-slots {
+  display: flex;
+  justify-content: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.table-law-slot {
+  width: 1.15rem;
+  height: 1.65rem;
+  border-radius: 3px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+}
+
+.table-law-slot.filled.red {
+  background: linear-gradient(165deg, #d64557, #8e1a2b);
+  border-color: rgba(255, 220, 220, 0.55);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.table-law-slot.filled.black {
+  background: linear-gradient(165deg, #3a4450, #12161c);
+  border-color: rgba(220, 220, 230, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.table-seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.table-seat {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  transform: translate(-50%, -50%);
+}
+
+.seat-role-card {
+  width: 2.05rem;
+  height: 2.85rem;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      #1e2a36 0 3px,
+      #243242 3px 6px
+    );
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.seat-name-card {
+  min-width: 3.2rem;
+  max-width: 4.4rem;
+  min-height: 2.85rem;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(165deg, #f4efe6 0%, #e2d8c8 100%);
+  color: #1a1f26;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.25rem 0.3rem;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+.seat-name {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.seat-office {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9e1b2e;
+}
+
+.seat-office.muted {
+  color: #6a7380;
+}
+
+.table-seat.is-president .seat-name-card {
+  border-color: #c9a227;
+  box-shadow:
+    0 0 0 1px #c9a227,
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.table-seat.is-rejected .seat-role-card,
+.table-seat.is-rejected .seat-name-card {
+  opacity: 0.55;
+}
+
+/* Slightly taller seats when there's room (large phones / tablets) */
+@media (min-height: 740px) {
+  .table-felt {
+    height: min(72dvh, 38rem);
+  }
+
+  .seat-role-card {
+    width: 2.35rem;
+    height: 3.25rem;
+  }
+
+  .seat-name-card {
+    min-width: 3.6rem;
+    max-width: 5rem;
+    min-height: 3.25rem;
+  }
+
+  .seat-name {
+    font-size: 0.75rem;
+  }
+
+  .table-law-slot {
+    width: 1.35rem;
+    height: 1.9rem;
+  }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   chancellorEnact,
   getHand,
@@ -9,13 +9,12 @@ import {
   mergeView,
   playerById,
   president,
-  toPublicBoard,
   winFromView,
   type GameSession,
   type WinResult,
 } from '../gameSession'
-import { BoardStatus } from './BoardStatus'
 import { LawCardView } from './LawCardView'
+import { TableBoard } from './TableBoard'
 
 type Phase =
   | 'loading'
@@ -47,7 +46,6 @@ export function LegislativeScreen({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const board = useMemo(() => toPublicBoard(session), [session])
   const prez = president(session)
   const chancellor = playerById(session, chancellorId)
 
@@ -112,7 +110,7 @@ export function LegislativeScreen({
   }
 
   return (
-    <main className="screen legislative-screen">
+    <main className="screen table-layout legislative-screen">
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
         <h1>
@@ -127,7 +125,16 @@ export function LegislativeScreen({
 
       {(phase === 'passPresident' ||
         phase === 'passChancellor' ||
-        phase === 'done') && <BoardStatus board={board} />}
+        phase === 'done') && (
+        <TableBoard
+          players={session.players}
+          presidentId={prez.id}
+          rejectedIds={session.rejectedIds}
+          redsOnTable={session.redsOnTable}
+          blacksOnTable={session.blacksOnTable}
+          roundNumber={session.roundNumber}
+        />
+      )}
 
       {error && (
         <p className="warning" role="alert">

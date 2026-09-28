@@ -6,12 +6,11 @@ import {
   mergeView,
   playerById,
   president,
-  toPublicBoard,
   winFromView,
   type GameSession,
   type WinResult,
 } from '../gameSession'
-import { BoardStatus } from './BoardStatus'
+import { TableBoard } from './TableBoard'
 
 type Phase = 'nominate' | 'voting' | 'reveal' | 'topEnactNotice'
 
@@ -58,7 +57,6 @@ export function NominationScreen({
   const castOnServer = useRef(new Set<string>())
   votesRef.current = votes
 
-  const board = useMemo(() => toPublicBoard(session), [session])
   const eligible = session.eligibleIds
   const prez = president(session)
 
@@ -245,7 +243,7 @@ export function NominationScreen({
     : 0
 
   return (
-    <main className="screen nomination-screen">
+    <main className="screen table-layout nomination-screen">
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
         <h1>
@@ -256,7 +254,14 @@ export function NominationScreen({
         </h1>
       </header>
 
-      <BoardStatus board={board} />
+      <TableBoard
+        players={session.players}
+        presidentId={prez.id}
+        rejectedIds={session.rejectedIds}
+        redsOnTable={session.redsOnTable}
+        blacksOnTable={session.blacksOnTable}
+        roundNumber={session.roundNumber}
+      />
       {error && (
         <p className="warning" role="alert">
           {error}

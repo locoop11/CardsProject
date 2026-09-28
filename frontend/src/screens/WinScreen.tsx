@@ -1,7 +1,6 @@
-import type { GameSession, WinResult } from '../gameSession'
+import { president, type GameSession, type WinResult } from '../gameSession'
 import { teamLabel } from '../roles'
-import { toPublicBoard } from '../gameSession'
-import { BoardStatus } from './BoardStatus'
+import { TableBoard } from './TableBoard'
 
 type Props = {
   session: GameSession
@@ -10,7 +9,6 @@ type Props = {
 }
 
 export function WinScreen({ session, win, onPlayAgain }: Props) {
-  const board = toPublicBoard(session)
   const reasonLabel =
     win.reason === 'communist_laws'
       ? '5 red LawCards enacted'
@@ -28,7 +26,7 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         }))
 
   return (
-    <main className="screen win-screen">
+    <main className="screen table-layout win-screen">
       <header className="screen-header">
         <p className="brand">Secret Cards</p>
         <h1>Game over</h1>
@@ -40,7 +38,14 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         </p>
       </header>
 
-      <BoardStatus board={board} />
+      <TableBoard
+        players={session.players}
+        presidentId={president(session).id}
+        rejectedIds={session.rejectedIds}
+        redsOnTable={session.redsOnTable}
+        blacksOnTable={session.blacksOnTable}
+        roundNumber={session.roundNumber}
+      />
 
       <section className="settings-block">
         <h2>Roles</h2>
