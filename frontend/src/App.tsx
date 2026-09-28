@@ -1,8 +1,13 @@
 import { useCallback, useState } from 'react'
 import type { SupportedPlayerCount } from './constants'
-import { createSession, type GameSession, type WinResult } from './gameSession'
+import {
+  advanceAfterGovernment,
+  createSession,
+  type GameSession,
+  type WinResult,
+} from './gameSession'
 import { assignRoles, type RevealedPlayer } from './roles'
-import { LegislativeStubScreen } from './screens/LegislativeStubScreen'
+import { LegislativeScreen } from './screens/LegislativeScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
@@ -29,6 +34,7 @@ export default function App() {
   const [players, setPlayers] = useState<RevealedPlayer[]>([])
   const [session, setSession] = useState<GameSession | null>(null)
   const [chancellorId, setChancellorId] = useState<string | null>(null)
+  const [legislativeKey, setLegislativeKey] = useState(0)
   const [win, setWin] = useState<WinResult | null>(null)
 
   const handleSessionChange = useCallback((next: GameSession) => {
@@ -80,10 +86,22 @@ export default function App() {
 
   if (step === 'legislative' && session && chancellorId) {
     return (
-      <LegislativeStubScreen
+      <LegislativeScreen
+        key={legislativeKey}
         session={session}
         chancellorId={chancellorId}
-        onBackToNomination={() => setStep('nomination')}
+        onSessionChange={handleSessionChange}
+        onRoundComplete={() => {
+          setSession((prev) =>
+            prev ? advanceAfterGovernment(prev, chancellorId) : prev,
+          )
+          setChancellorId(null)
+          setStep('nomination')
+        }}
+        onWin={(result) => {
+          setWin(result)
+          setStep('win')
+        }}
       />
     )
   }
@@ -91,10 +109,12 @@ export default function App() {
   if (step === 'nomination' && session) {
     return (
       <NominationScreen
+        key={`nom-${session.roundNumber}-${session.presidentIndex}`}
         session={session}
         onSessionChange={handleSessionChange}
         onGovernmentApproved={(id) => {
           setChancellorId(id)
+          setLegislativeKey((k) => k + 1)
           setStep('legislative')
         }}
         onWin={(result) => {

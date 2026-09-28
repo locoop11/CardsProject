@@ -309,7 +309,7 @@ game start
        → (win) GAME_OVER
        → (no win) draw 3 LawCards → LEGISLATIVE_PRESIDENT
             → discard 1 LawCard back to deck (shuffle)
-            → LEGISLATIVE_CHANCELLOR → enact 1 LawCard to table → win check
+            → LEGISLATIVE_CHANCELLOR → discard 1 back to deck; remaining LawCard enacted to table → win check
             → (else) advance round → NOMINATION
 ```
 
@@ -373,7 +373,7 @@ Each public engine action should append a serializable entry to `state.action_lo
 Uses the generic cards system:
 
 - President discard: remove one of 3 from `drawn_law_cards`; `law_deck.return_and_shuffle([discarded])`; leave 2; → `LEGISLATIVE_CHANCELLOR`.
-- Chancellor enact: move one of 2 onto `law_table`; clear hand; win check; else `advance_round`.
+- Chancellor: discard 1 of 2 via `return_and_shuffle`; the remaining LawCard moves onto `law_table`; clear hand; win check; else `advance_round`.
 - Top-of-deck path: `law_deck.draw(1)` → play onto `law_table`; win check; else advance round (term-limit clear per settings).
 
 **Tests:** discards return to deck; enacted stay on table; top-card path skips legislative phases; never draw more than `len(law_deck)`.
@@ -457,7 +457,7 @@ UI copy uses **Law** / **LawCard** / **LawCards**, not “policy”.
 
 ### Task 3.5 — Legislative screens
 - President: 3 full LawCard visuals (from full `Card` objects: id + kind), discard exactly 1 (returns to deck).
-- Chancellor: 2 full LawCard visuals, enact exactly 1 (to table).
+- Chancellor: 2 full LawCard visuals, discard exactly 1 (returns to deck); the remaining LawCard is enacted onto the table.
 - Only reachable by the correct player in the pass flow; LawCards never shown on other views.
 
 ### Task 3.6 — Game board / status

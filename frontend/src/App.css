@@ -398,3 +398,66 @@ body {
 .law-black {
   color: var(--ink);
 }
+
+.law-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.law-card {
+  width: 6.5rem;
+  min-height: 9.25rem;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.5rem;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.law-card.interactive {
+  cursor: pointer;
+}
+
+.law-card.selected {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.law-card-red {
+  background: linear-gradient(160deg, #c4293d 0%, #7d1524 100%);
+  color: #fff;
+  border-color: #5c1019;
+}
+
+.law-card-black {
+  background: linear-gradient(160deg, #2c3640 0%, #1a1f26 100%);
+  color: #f2f4f6;
+  border-color: #0d1014;
+}
+
+.law-card-kind {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.law-card-number {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.law-card-color {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.9;
+}

@@ -164,27 +164,29 @@ export function advanceRound(
   }
 }
 
-export function afterLegislativeEnact(
+/** Apply an enacted LawCard to the tracks; does not advance the round yet. */
+export function applyLegislativeEnact(
   session: GameSession,
   color: 'red' | 'black',
-  chancellorId: string,
 ): { session: GameSession; win: WinResult | null } {
   const reds = session.redsOnTable + (color === 'red' ? 1 : 0)
   const blacks = session.blacksOnTable + (color === 'black' ? 1 : 0)
   const win = checkEnactmentWin(reds, blacks)
-  if (win) {
-    return {
-      session: { ...session, redsOnTable: reds, blacksOnTable: blacks },
-      win,
-    }
-  }
   return {
-    session: advanceRound(
-      { ...session, redsOnTable: reds, blacksOnTable: blacks },
-      { clearChancellorTermLimit: false, newChancellorId: chancellorId },
-    ),
-    win: null,
+    session: { ...session, redsOnTable: reds, blacksOnTable: blacks },
+    win,
   }
+}
+
+/** After a successful government enacts a law and the UI leaves legislative. */
+export function advanceAfterGovernment(
+  session: GameSession,
+  chancellorId: string,
+): GameSession {
+  return advanceRound(session, {
+    clearChancellorTermLimit: false,
+    newChancellorId: chancellorId,
+  })
 }
 
 export type { Role, Team }
