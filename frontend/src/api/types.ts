@@ -37,6 +37,8 @@ export type PublicView = {
   players: PlayerPublic[]
   reds_on_table: number
   blacks_on_table: number
+  /** Enacted LawCards in play order (public board). */
+  laws_on_table: LawCardDto[]
   votes_cast: string[]
   winner: string | null
   win_reason: string | null

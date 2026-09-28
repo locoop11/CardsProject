@@ -419,8 +419,8 @@ body {
 }
 
 .law-card {
-  width: 6.6rem;
-  height: 9.4rem;
+  width: 6.4rem;
+  height: 9.1rem;
   padding: 0;
   border: none;
   border-radius: 0.45rem;
@@ -568,8 +568,8 @@ body {
 .deck-pile {
   pointer-events: auto;
   position: relative;
-  width: 2.6rem;
-  height: 3.4rem;
+  width: 3.4rem;
+  height: 4.85rem;
   border: 0;
   padding: 0;
   background: transparent;
@@ -608,8 +608,8 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 82%;
-  height: 32%;
+  width: 92%;
+  height: 36%;
   border: 1.5px solid rgba(255, 255, 255, 0.55);
   border-radius: 0.85rem;
   display: flex;
@@ -617,7 +617,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.65rem;
+  padding: 0.45rem 0.5rem;
   background: rgba(0, 0, 0, 0.12);
 }
 
@@ -645,9 +645,9 @@ body {
 }
 
 .table-law-slot {
-  width: 1.7rem;
-  height: 2.4rem;
-  border-radius: 3px;
+  width: 3.05rem;
+  height: 4.35rem;
+  border-radius: 4px;
   border: 1.5px solid rgba(255, 255, 255, 0.45);
   background: transparent;
   overflow: hidden;
@@ -852,8 +852,8 @@ button.table-seat:disabled {
   }
 
   .table-law-slot {
-    width: 1.9rem;
-    height: 2.7rem;
+    width: 3.35rem;
+    height: 4.8rem;
   }
 }
 

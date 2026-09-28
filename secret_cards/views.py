@@ -110,6 +110,7 @@ def public_view(state: GameState, *, game_id: str) -> dict[str, Any]:
         "players": [player_public(p) for p in state.players],
         "reds_on_table": reds_on_table(state),
         "blacks_on_table": blacks_on_table(state),
+        "laws_on_table": [card_to_dict(c) for c in state.law_table.cards],
         "votes_cast": sorted(state.votes.keys()),
         "winner": state.winner.value if state.winner else None,
         "win_reason": state.win_reason,

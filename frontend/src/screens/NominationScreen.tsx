@@ -304,6 +304,7 @@ export function NominationScreen({
         previousChancellorId={session.previousChancellorId}
         redsOnTable={session.redsOnTable}
         blacksOnTable={session.blacksOnTable}
+        lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
         voteBorders={voteBorders}
         voteOutcome={voteOutcome}

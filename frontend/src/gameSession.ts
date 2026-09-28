@@ -1,4 +1,4 @@
-import type { PublicView } from './api/types'
+import type { LawCardDto, PublicView } from './api/types'
 import type { Role, Team } from './roles'
 
 /** Seconds each player gets to cast Ja/Nein during pass-and-play voting. */
@@ -31,6 +31,8 @@ export type GameSession = {
   roundNumber: number
   redsOnTable: number
   blacksOnTable: number
+  /** Enacted LawCards in play order (for true ranks on the board). */
+  lawsOnTable: LawCardDto[]
   rejectedIds: string[]
   previousChancellorId: string | null
   phase: string
@@ -58,6 +60,7 @@ export function sessionFromView(
     roundNumber: view.round_number,
     redsOnTable: view.reds_on_table,
     blacksOnTable: view.blacks_on_table,
+    lawsOnTable: view.laws_on_table ?? [],
     rejectedIds: view.rejected_nominee_ids,
     previousChancellorId: view.previous_chancellor_id,
     phase: view.phase,

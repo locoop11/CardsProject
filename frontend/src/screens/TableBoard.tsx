@@ -1,3 +1,4 @@
+import type { LawCardDto } from '../api/types'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
 import { PlayingCardFace } from './PlayingCardFace'
 
@@ -10,6 +11,8 @@ type Props = {
   previousChancellorId?: string | null
   redsOnTable: number
   blacksOnTable: number
+  /** Enacted cards in play order; ranks shown on filled slots. */
+  lawsOnTable?: LawCardDto[]
   roundNumber: number
   voteBorders?: Record<string, VoteBorder>
   voteOutcome?: 'approved' | 'rejected' | null
@@ -61,6 +64,7 @@ export function TableBoard({
   previousChancellorId = null,
   redsOnTable,
   blacksOnTable,
+  lawsOnTable = [],
   roundNumber,
   voteBorders,
   voteOutcome = null,
@@ -75,6 +79,8 @@ export function TableBoard({
   const tappable = new Set(tappableSeatIds ?? [])
   const eligible = new Set(eligibleHighlightIds ?? tappableSeatIds ?? [])
   const revealingVotes = Boolean(voteBorders)
+  const redLaws = lawsOnTable.filter((c) => c.color === 'red')
+  const blackLaws = lawsOnTable.filter((c) => c.color === 'black')
 
   return (
     <section
@@ -124,20 +130,24 @@ export function TableBoard({
               className="law-row-slots"
               aria-label={`Red laws ${redsOnTable} of ${RED_WIN}`}
             >
-              {Array.from({ length: RED_WIN }, (_, i) => (
-                <span
-                  key={`red-${i}`}
-                  className={
-                    i < redsOnTable
-                      ? 'table-law-slot filled red'
-                      : 'table-law-slot'
-                  }
-                >
-                  {i < redsOnTable && (
-                    <PlayingCardFace color="red" number={i + 1} />
-                  )}
-                </span>
-              ))}
+              {Array.from({ length: RED_WIN }, (_, i) => {
+                const card = redLaws[i]
+                return (
+                  <span
+                    key={`red-${i}`}
+                    className={
+                      card ? 'table-law-slot filled red' : 'table-law-slot'
+                    }
+                  >
+                    {card && (
+                      <PlayingCardFace
+                        color="red"
+                        number={card.number}
+                      />
+                    )}
+                  </span>
+                )
+              })}
             </div>
           </div>
           <div className="law-row law-row-black">
@@ -146,20 +156,26 @@ export function TableBoard({
               className="law-row-slots"
               aria-label={`Black laws ${blacksOnTable} of ${BLACK_WIN}`}
             >
-              {Array.from({ length: BLACK_WIN }, (_, i) => (
-                <span
-                  key={`black-${i}`}
-                  className={
-                    i < blacksOnTable
-                      ? 'table-law-slot filled black'
-                      : 'table-law-slot'
-                  }
-                >
-                  {i < blacksOnTable && (
-                    <PlayingCardFace color="black" number={i + 1} />
-                  )}
-                </span>
-              ))}
+              {Array.from({ length: BLACK_WIN }, (_, i) => {
+                const card = blackLaws[i]
+                return (
+                  <span
+                    key={`black-${i}`}
+                    className={
+                      card
+                        ? 'table-law-slot filled black'
+                        : 'table-law-slot'
+                    }
+                  >
+                    {card && (
+                      <PlayingCardFace
+                        color="black"
+                        number={card.number}
+                      />
+                    )}
+                  </span>
+                )
+              })}
             </div>
           </div>
         </div>

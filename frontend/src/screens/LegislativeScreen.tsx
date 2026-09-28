@@ -135,6 +135,7 @@ export function LegislativeScreen({
         previousChancellorId={session.previousChancellorId}
         redsOnTable={session.redsOnTable}
         blacksOnTable={session.blacksOnTable}
+        lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
       />
 

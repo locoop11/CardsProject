@@ -67,6 +67,7 @@ class PublicViewOut(BaseModel):
     players: list[PlayerPublicOut]
     reds_on_table: int
     blacks_on_table: int
+    laws_on_table: list[CardOut] = Field(default_factory=list)
     votes_cast: list[str]
     winner: Optional[str] = None
     win_reason: Optional[str] = None

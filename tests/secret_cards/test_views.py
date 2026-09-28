@@ -31,6 +31,19 @@ def test_public_view_omits_roles() -> None:
     view = public_view(state, game_id="g1")
     for player in view["players"]:
         assert set(player.keys()) == {"id", "name"}
+    assert view["laws_on_table"] == []
+
+
+def test_public_view_includes_enacted_law_ranks() -> None:
+    from secret_cards.laws.law_card import LawColor, make_law_card
+
+    state = start_game(Settings(player_count=5), ["A", "B", "C", "D", "E"])
+    state.law_table.play(make_law_card(LawColor.RED, 2, card_id=99))
+    view = public_view(state, game_id="g1")
+    assert view["reds_on_table"] == 1
+    assert view["laws_on_table"] == [
+        {"id": 99, "type": "law", "number": 2, "color": "red"}
+    ]
 
 
 def test_role_for_player_only_returns_that_player() -> None:

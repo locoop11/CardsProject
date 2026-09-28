@@ -45,6 +45,7 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         previousChancellorId={session.previousChancellorId}
         redsOnTable={session.redsOnTable}
         blacksOnTable={session.blacksOnTable}
+        lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
       />
 
