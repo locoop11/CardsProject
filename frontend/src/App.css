@@ -538,7 +538,7 @@ body {
 .table-vote-banner {
   position: absolute;
   left: 50%;
-  top: calc(50% - 30%);
+  top: calc(50% - 19%);
   transform: translate(-50%, -100%);
   z-index: 3;
   display: flex;
@@ -785,11 +785,11 @@ button.table-seat:disabled {
 }
 
 .seat-name-card {
-  width: 5.25rem;
-  min-width: 5.25rem;
-  max-width: 5.25rem;
-  height: 2.35rem;
-  min-height: 2.35rem;
+  width: 4.75rem;
+  min-width: 4.75rem;
+  max-width: 4.75rem;
+  height: 2.1rem;
+  min-height: 2.1rem;
   box-sizing: border-box;
   border-radius: 0.45rem;
   border: 1.5px solid rgba(255, 255, 255, 0.72);
@@ -801,7 +801,7 @@ button.table-seat:disabled {
   align-items: center;
   justify-content: center;
   gap: 0.08rem;
-  padding: 0.28rem 0.4rem;
+  padding: 0.22rem 0.35rem;
   text-align: center;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.22),
@@ -811,7 +811,7 @@ button.table-seat:disabled {
 
 .seat-name {
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
@@ -898,15 +898,15 @@ button.table-seat:disabled {
   }
 
   .seat-name-card {
-    width: 5.6rem;
-    min-width: 5.6rem;
-    max-width: 5.6rem;
-    height: 2.5rem;
-    min-height: 2.5rem;
+    width: 5.1rem;
+    min-width: 5.1rem;
+    max-width: 5.1rem;
+    height: 2.25rem;
+    min-height: 2.25rem;
   }
 
   .seat-name {
-    font-size: 0.84rem;
+    font-size: 0.74rem;
   }
 
   .seat-office {
@@ -930,20 +930,15 @@ button.table-seat:disabled {
 }
 
 .table-board.roles-revealed .seat-name-card {
-  width: 5.6rem;
-  min-width: 5.6rem;
-  max-width: 5.6rem;
-  height: 2.55rem;
-  min-height: 2.55rem;
+  width: 5rem;
+  min-width: 5rem;
+  max-width: 5rem;
+  height: 2.15rem;
+  min-height: 2.15rem;
 }
 
 .table-board.roles-revealed .seat-name {
-  font-size: 0.84rem;
-}
-
-.table-board.roles-revealed .seat-office {
-  font-size: 0.58rem;
-  letter-spacing: 0.07em;
+  font-size: 0.72rem;
 }
 
 @media (min-height: 740px) {
@@ -953,13 +948,13 @@ button.table-seat:disabled {
   }
 
   .table-board.roles-revealed .seat-name-card {
-    width: 5.9rem;
-    min-width: 5.9rem;
-    max-width: 5.9rem;
+    width: 5.35rem;
+    min-width: 5.35rem;
+    max-width: 5.35rem;
   }
 
   .table-board.roles-revealed .seat-name {
-    font-size: 0.9rem;
+    font-size: 0.78rem;
   }
 }
 

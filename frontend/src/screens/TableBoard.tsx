@@ -259,30 +259,15 @@ export function TableBoard({
                 </div>
                 <div className="seat-name-card">
                   <span className="seat-name">{player.name}</span>
-                  {revealRoles && player.role ? (
-                    <span
-                      className={
-                        player.role === 'hitler'
-                          ? 'seat-office seat-role-hitler'
-                          : player.role === 'fascist'
-                            ? 'seat-office seat-role-fascist'
-                            : 'seat-office seat-role-communist'
-                      }
-                    >
-                      {roleLabel(player.role)}
-                    </span>
-                  ) : (
-                    <>
-                      {isPresident && (
-                        <span className="seat-office">President</span>
-                      )}
-                      {rejected.has(player.id) &&
-                        !isPresident &&
-                        !revealingVotes && (
-                          <span className="seat-office muted">Rejected</span>
-                        )}
-                    </>
+                  {!revealRoles && isPresident && (
+                    <span className="seat-office">President</span>
                   )}
+                  {!revealRoles &&
+                    rejected.has(player.id) &&
+                    !isPresident &&
+                    !revealingVotes && (
+                      <span className="seat-office muted">Rejected</span>
+                    )}
                 </div>
               </>
             )
