@@ -637,6 +637,38 @@ body {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.law-win-banner {
+  margin: 0 0 0.15rem;
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: none;
+}
+
+.law-win-banner.law-win-communist {
+  color: #ff8a9a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.law-win-banner.law-win-fascist {
+  color: #f0ebe3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.table-oval.table-oval-win-communist {
+  border-color: rgba(220, 70, 90, 0.85);
+  background: rgba(120, 20, 35, 0.28);
+}
+
+.table-oval.table-oval-win-fascist {
+  border-color: rgba(230, 225, 215, 0.75);
+  background: rgba(12, 14, 18, 0.42);
+}
+
 .law-row-slots {
   display: flex;
   justify-content: center;
@@ -1091,7 +1123,7 @@ button.table-seat:disabled {
   text-align: center;
 }
 
-/* Win screen: full table with role cards face up, then result popup */
+/* Win screen: full table with role cards face up + Play again */
 .screen.table-layout.win-screen {
   min-height: 100dvh;
   gap: 0;
@@ -1107,6 +1139,22 @@ button.table-seat:disabled {
   min-height: 100dvh;
   height: auto;
   border-radius: 0;
+}
+
+/* Same vertical slot as the draw deck (above the laws oval). */
+.win-play-again {
+  position: fixed;
+  left: 50%;
+  top: calc(50% - 19%);
+  transform: translate(-50%, -100%);
+  z-index: 35;
+  width: min(9.5rem, calc(100% - 2rem));
+}
+
+.win-play-again .btn {
+  width: 100%;
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
 }
 
 #root:has(.win-screen) {

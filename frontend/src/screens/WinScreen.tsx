@@ -15,22 +15,29 @@ type Props = {
 }
 
 const ROLE_FLIP_MS = 550
-const POPUP_DELAY_MS = ROLE_FLIP_MS + 450
+const PLAY_AGAIN_DELAY_MS = ROLE_FLIP_MS + 450
 
-export function WinScreen({ session, win, onPlayAgain }: Props) {
-  const [showResult, setShowResult] = useState(false)
-
-  useEffect(() => {
-    const id = window.setTimeout(() => setShowResult(true), POPUP_DELAY_MS)
-    return () => window.clearTimeout(id)
-  }, [])
-
-  const reasonLabel =
+function winMessage(win: WinResult): string {
+  const side = win.winner === 'communist' ? 'Communist' : 'Fascist'
+  const reason =
     win.reason === 'communist_laws'
       ? '5 red LawCards enacted'
       : win.reason === 'fascist_laws'
         ? '6 black LawCards enacted'
-        : 'Hitler elected chancellor'
+        : 'Hitler elected Chancellor'
+  return `${side} Win: ${reason}`
+}
+
+export function WinScreen({ session, win, onPlayAgain }: Props) {
+  const [showPlayAgain, setShowPlayAgain] = useState(false)
+
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => setShowPlayAgain(true),
+      PLAY_AGAIN_DELAY_MS,
+    )
+    return () => window.clearTimeout(id)
+  }, [])
 
   // Prefer roles kept on the session; fall back to win result by seat order.
   const players: TablePlayer[] = session.players.map((p, i) => {
@@ -41,9 +48,6 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
       team: (p.team ?? fromWin?.team) as Team | undefined,
     }
   })
-
-  const winners =
-    win.winner === 'communist' ? 'Communists' : 'Fascists'
 
   return (
     <main className="screen table-layout win-screen">
@@ -57,25 +61,14 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
         revealRoles
+        winSummary={{ winner: win.winner, message: winMessage(win) }}
       />
 
-      {showResult && (
-        <div className="table-overlay" role="dialog" aria-modal="true">
-          <div className="table-overlay-panel">
-            <p className="table-overlay-title">
-              <span className={`team-${win.winner}`}>{winners}</span> win
-            </p>
-            <p className="table-overlay-hint">{reasonLabel}.</p>
-            <div className="table-overlay-actions single">
-              <button
-                type="button"
-                className="btn primary"
-                onClick={onPlayAgain}
-              >
-                Play again
-              </button>
-            </div>
-          </div>
+      {showPlayAgain && (
+        <div className="win-play-again">
+          <button type="button" className="btn primary" onClick={onPlayAgain}>
+            Play again
+          </button>
         </div>
       )}
     </main>

@@ -1,9 +1,15 @@
 import type { LawCardDto } from '../api/types'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
-import { roleLabel, roleToPlayingCard, type Role } from '../roles'
+import { roleLabel, roleToPlayingCard, type Role, type Team } from '../roles'
 import { PlayingCardFace } from './PlayingCardFace'
 
 type VoteBorder = 'ja' | 'nein'
+
+type WinSummary = {
+  winner: Team
+  /** Full line, e.g. "Fascist Win: Hitler elected Chancellor" */
+  message: string
+}
 
 type Props = {
   players: TablePlayer[]
@@ -25,6 +31,8 @@ type Props = {
   eligibleHighlightIds?: string[]
   /** Flip seat role cards face-up (win reveal). */
   revealRoles?: boolean
+  /** Replace Communist/Fascist labels with a colored win message. */
+  winSummary?: WinSummary | null
 }
 
 /** Place seats evenly around a rounded-rectangle perimeter (phone-friendly). */
@@ -99,6 +107,7 @@ export function TableBoard({
   selectedSeatId = null,
   eligibleHighlightIds,
   revealRoles = false,
+  winSummary = null,
 }: Props) {
   const rejected = new Set(rejectedIds)
   const tappable = new Set(tappableSeatIds ?? [])
@@ -171,9 +180,23 @@ export function TableBoard({
           </div>
         )}
 
-        <div className="table-oval" aria-label="Enacted LawCards">
+        <div
+          className={
+            winSummary
+              ? `table-oval table-oval-win table-oval-win-${winSummary.winner}`
+              : 'table-oval'
+          }
+          aria-label="Enacted LawCards"
+        >
+          {winSummary && (
+            <p className={`law-win-banner law-win-${winSummary.winner}`}>
+              {winSummary.message}
+            </p>
+          )}
           <div className="law-row law-row-red">
-            <span className="law-row-label">Communist</span>
+            {!winSummary && (
+              <span className="law-row-label">Communist</span>
+            )}
             <div
               className="law-row-slots"
               aria-label={`Red laws ${redsOnTable} of ${RED_WIN}`}
@@ -199,7 +222,9 @@ export function TableBoard({
             </div>
           </div>
           <div className="law-row law-row-black">
-            <span className="law-row-label">Fascist</span>
+            {!winSummary && (
+              <span className="law-row-label">Fascist</span>
+            )}
             <div
               className="law-row-slots"
               aria-label={`Black laws ${blacksOnTable} of ${BLACK_WIN}`}
