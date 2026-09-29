@@ -625,16 +625,39 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
   width: 100%;
+  text-align: center;
 }
 
 .law-row-label {
+  display: inline-block;
+  width: auto;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 0.22rem 0.7rem;
+  border-radius: 0.35rem;
+  border: 1.5px solid transparent;
+  line-height: 1.2;
+}
+
+.law-row-red .law-row-label {
+  color: #fff5f5;
+  background: #9e1b2e;
+  border-color: rgba(255, 200, 200, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+.law-row-black .law-row-label {
+  color: #f5f5f5;
+  background: #1a1f26;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .law-win-banner {
