@@ -616,8 +616,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
+  gap: 1.05rem;
+  padding: 0.55rem 0.5rem;
   background: rgba(0, 0, 0, 0.12);
 }
 
@@ -625,7 +625,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
   width: 100%;
 }
 
@@ -785,13 +785,13 @@ button.table-seat:disabled {
 }
 
 .seat-name-card {
-  width: 4.75rem;
-  min-width: 4.75rem;
-  max-width: 4.75rem;
-  height: 2.1rem;
-  min-height: 2.1rem;
+  width: 3.85rem;
+  min-width: 3.85rem;
+  max-width: 3.85rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
   box-sizing: border-box;
-  border-radius: 0.45rem;
+  border-radius: 0.4rem;
   border: 1.5px solid rgba(255, 255, 255, 0.72);
   background:
     linear-gradient(165deg, #fffdf7 0%, #f3ead8 55%, #e8dcc8 100%);
@@ -800,8 +800,8 @@ button.table-seat:disabled {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.08rem;
-  padding: 0.22rem 0.35rem;
+  gap: 0.06rem;
+  padding: 0.16rem 0.28rem;
   text-align: center;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.22),
@@ -811,7 +811,7 @@ button.table-seat:disabled {
 
 .seat-name {
   font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-size: 0.58rem;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.01em;
@@ -822,7 +822,7 @@ button.table-seat:disabled {
 }
 
 .seat-office {
-  font-size: 0.55rem;
+  font-size: 0.48rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -898,19 +898,19 @@ button.table-seat:disabled {
   }
 
   .seat-name-card {
-    width: 5.1rem;
-    min-width: 5.1rem;
-    max-width: 5.1rem;
-    height: 2.25rem;
-    min-height: 2.25rem;
+    width: 4.15rem;
+    min-width: 4.15rem;
+    max-width: 4.15rem;
+    height: 1.9rem;
+    min-height: 1.9rem;
   }
 
   .seat-name {
-    font-size: 0.74rem;
+    font-size: 0.62rem;
   }
 
   .seat-office {
-    font-size: 0.58rem;
+    font-size: 0.5rem;
   }
 
   .table-law-slot {
@@ -930,15 +930,15 @@ button.table-seat:disabled {
 }
 
 .table-board.roles-revealed .seat-name-card {
-  width: 5rem;
-  min-width: 5rem;
-  max-width: 5rem;
-  height: 2.15rem;
-  min-height: 2.15rem;
+  width: 4.15rem;
+  min-width: 4.15rem;
+  max-width: 4.15rem;
+  height: 1.85rem;
+  min-height: 1.85rem;
 }
 
 .table-board.roles-revealed .seat-name {
-  font-size: 0.72rem;
+  font-size: 0.62rem;
 }
 
 @media (min-height: 740px) {
@@ -948,13 +948,13 @@ button.table-seat:disabled {
   }
 
   .table-board.roles-revealed .seat-name-card {
-    width: 5.35rem;
-    min-width: 5.35rem;
-    max-width: 5.35rem;
+    width: 4.45rem;
+    min-width: 4.45rem;
+    max-width: 4.45rem;
   }
 
   .table-board.roles-revealed .seat-name {
-    font-size: 0.78rem;
+    font-size: 0.66rem;
   }
 }
 

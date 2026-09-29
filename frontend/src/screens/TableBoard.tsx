@@ -49,19 +49,36 @@ function seatPosition(
   const start = width / 2
   let d = (start + (index / total) * perimeter) % perimeter
 
+  // Keep left/right seats out of the centered laws oval, but leave a
+  // little gap from the top/bottom rows so name cards don't collide.
+  const sideBandTopStart = revealRoles ? 16 : 15
+  const sideBandTopEnd = revealRoles ? 28 : 27
+  const sideBandBottomStart = revealRoles ? 72 : 73
+  const sideBandBottomEnd = revealRoles ? 84 : 85
+  const midY = (top + bottom) / 2
+
+  const mapSideTop = (rawTop: number) => {
+    if (rawTop <= midY) {
+      const t = (rawTop - top) / Math.max(midY - top, 1)
+      return sideBandTopStart + t * (sideBandTopEnd - sideBandTopStart)
+    }
+    const t = (rawTop - midY) / Math.max(bottom - midY, 1)
+    return sideBandBottomStart + t * (sideBandBottomEnd - sideBandBottomStart)
+  }
+
   if (d <= width) {
     return { left: `${left + d}%`, top: `${top}%` }
   }
   d -= width
   if (d <= height) {
-    return { left: `${right}%`, top: `${top + d}%` }
+    return { left: `${right}%`, top: `${mapSideTop(top + d)}%` }
   }
   d -= height
   if (d <= width) {
     return { left: `${right - d}%`, top: `${bottom}%` }
   }
   d -= width
-  return { left: `${left}%`, top: `${bottom - d}%` }
+  return { left: `${left}%`, top: `${mapSideTop(bottom - d)}%` }
 }
 
 export function TableBoard({
