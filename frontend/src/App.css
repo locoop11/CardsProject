@@ -1091,40 +1091,11 @@ button.table-seat:disabled {
   text-align: center;
 }
 
-/* Win screen: full table with role cards face up */
+/* Win screen: full table with role cards face up, then result popup */
 .screen.table-layout.win-screen {
   min-height: 100dvh;
   gap: 0;
   padding: 0;
-}
-
-.screen.table-layout.win-screen > .screen-header {
-  position: absolute;
-  top: 0.35rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 6;
-  gap: 0.1rem;
-  align-items: center;
-  text-align: center;
-  pointer-events: none;
-}
-
-.screen.table-layout.win-screen > .screen-header .brand {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-}
-
-.screen.table-layout.win-screen > .screen-header h1 {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.screen.table-layout.win-screen > .screen-header .lede {
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.8);
-  max-width: 16rem;
 }
 
 .screen.table-layout.win-screen .table-board {
@@ -1136,15 +1107,6 @@ button.table-seat:disabled {
   min-height: 100dvh;
   height: auto;
   border-radius: 0;
-}
-
-.screen.table-layout.win-screen > .screen-actions {
-  position: fixed;
-  left: 50%;
-  bottom: 1.1rem;
-  transform: translateX(-50%);
-  z-index: 35;
-  width: min(16rem, calc(100% - 2rem));
 }
 
 #root:has(.win-screen) {

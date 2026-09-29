@@ -186,6 +186,17 @@ export function NominationScreen({
     timerPausedRef.current = confirmVoteOpen
   }, [confirmVoteOpen])
 
+  // Hitler elected (or other win from vote resolve): brief vote reveal, then win table.
+  const onWinRef = useRef(onWin)
+  onWinRef.current = onWin
+  useEffect(() => {
+    if (phase !== 'reveal' || !lastAction) return
+    const win = winFromView(lastAction.view)
+    if (!win) return
+    const id = window.setTimeout(() => onWinRef.current(win), 1400)
+    return () => window.clearTimeout(id)
+  }, [phase, lastAction])
+
   async function castVoteLocal(playerId: string, ja: boolean) {
     if (votes[playerId] !== undefined || resolvedRef.current || busy) return
     const next = { ...votes, [playerId]: ja }
@@ -417,26 +428,6 @@ export function NominationScreen({
         <div className="table-overlay" role="status">
           <div className="table-overlay-panel">
             <p className="table-overlay-title">Resolving…</p>
-          </div>
-        </div>
-      )}
-
-      {phase === 'reveal' && revealWin && (
-        <div className="table-overlay" role="dialog" aria-modal="true">
-          <div className="table-overlay-panel">
-            <p className="table-overlay-title">Game over</p>
-            <p className="table-overlay-hint">
-              Government approved — Hitler was elected chancellor.
-            </p>
-            <div className="table-overlay-actions single">
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => onWin(revealWin)}
-              >
-                Continue
-              </button>
-            </div>
           </div>
         </div>
       )}
