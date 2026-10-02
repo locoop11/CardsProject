@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { RoleRevealPlayer } from '../api/types'
 import {
+  DEFAULT_CARD_SKIN,
+  resolveRole,
+  type CardSkinId,
+} from '../cardAssets'
+import {
   roleLabel,
-  roleToPlayingCard,
   teamLabel,
   type Role,
 } from '../roles'
@@ -12,14 +16,18 @@ type Phase = 'pass' | 'revealed'
 
 type Props = {
   players: RoleRevealPlayer[]
-  onBackToNames: () => void
+  cardSkin?: CardSkinId
+  onBackToHub: () => void
   onComplete: () => void
 }
 
-function assignRevealCards(players: RoleRevealPlayer[]) {
+function assignRevealSrcs(
+  players: RoleRevealPlayer[],
+  skin: CardSkinId,
+): Map<string, string> {
   const fascistIndex = { n: 0 }
   const communistIndex = { n: 0 }
-  const byId = new Map<string, { color: 'red' | 'black'; number: number }>()
+  const byId = new Map<string, string>()
   for (const player of players) {
     const role = player.role as Role
     let same = 0
@@ -30,26 +38,30 @@ function assignRevealCards(players: RoleRevealPlayer[]) {
       same = communistIndex.n
       communistIndex.n += 1
     }
-    byId.set(player.id, roleToPlayingCard(role, same))
+    byId.set(player.id, resolveRole(skin, role, same))
   }
   return byId
 }
 
 export function RoleRevealScreen({
   players,
-  onBackToNames,
+  cardSkin = DEFAULT_CARD_SKIN,
+  onBackToHub,
   onComplete,
 }: Props) {
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('pass')
-  const cardsById = useMemo(() => assignRevealCards(players), [players])
+  const srcById = useMemo(
+    () => assignRevealSrcs(players, cardSkin),
+    [players, cardSkin],
+  )
 
   const player = players[index]
   if (!player) {
     return null
   }
 
-  const card = cardsById.get(player.id) ?? { color: 'black' as const, number: 1 }
+  const faceSrc = srcById.get(player.id)
   const isFirst = index === 0 && phase === 'pass'
   const isLast = index === players.length - 1
 
@@ -115,9 +127,20 @@ export function RoleRevealScreen({
             aria-hidden={phase === 'pass'}
           >
             {phase === 'pass' ? (
-              <PlayingCardFace color="black" number={1} faceDown />
+              <PlayingCardFace
+                color="black"
+                number={1}
+                faceDown
+                skin={cardSkin}
+              />
             ) : (
-              <PlayingCardFace color={card.color} number={card.number} />
+              <PlayingCardFace
+                color="black"
+                number={1}
+                skin={cardSkin}
+                src={faceSrc}
+                alt={`${roleLabel(player.role)} role card`}
+              />
             )}
           </div>
 
@@ -145,9 +168,9 @@ export function RoleRevealScreen({
             <button
               type="button"
               className="btn ghost role-reveal-back"
-              onClick={onBackToNames}
+              onClick={onBackToHub}
             >
-              Back to names
+              Back to settings
             </button>
           )}
         </div>

@@ -52,7 +52,8 @@ Pointers into living ai-context files (contracts, maps) — not duplicated rules
 
 | File | Concern |
 |------|---------|
-| `01-settings-hub-menu.md` | **Next up** — settings hub; whole-table skin presets (Option A: Hitler / role / law) |
+| `01-settings-hub-menu.md` | Settings hub; whole-table skin presets (Option A: Hitler / role / law) |
 | `02-multi-device-privacy.md` | Per-device role/hand privacy (API building block exists; product path not wired) |
 | `03-per-player-owned-skins.md` | Future — accounts; per-player Hitler/role packs; laws undecided |
+| `04-settings-hub-aesthetics.md` | **Next up** — “Players Number” dropdown; blurred board backdrop on hub |
 | `99-out-of-scope.md` | Explicit v1 non-goals (eliminations, online multiplayer, persistence, engine settings toggles UI, crypto shuffle, other games) |

@@ -1,6 +1,10 @@
 import { useCallback, useState } from 'react'
 import { createGame, deleteGame } from './api/client'
 import type { RoleRevealPlayer } from './api/types'
+import {
+  DEFAULT_CARD_SKIN,
+  type CardSkinId,
+} from './cardAssets'
 import type { SupportedPlayerCount } from './constants'
 import {
   mergeView,
@@ -8,21 +12,24 @@ import {
   type GameSession,
   type WinResult,
 } from './gameSession'
+import { resolvePlayerNames } from './names'
 import { LegislativeScreen } from './screens/LegislativeScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
-import { SettingsScreen } from './screens/SettingsScreen'
+import { SettingsHubScreen } from './screens/SettingsScreen'
+import { SkinScreen } from './screens/SkinScreen'
 import { WinScreen } from './screens/WinScreen'
 import './App.css'
 
 type Step =
   | 'settings'
-  | 'names'
   | 'roleReveal'
   | 'nomination'
   | 'legislative'
   | 'win'
+
+type SettingsPanel = 'hub' | 'names' | 'skin'
 
 function emptyNames(count: number): string[] {
   return Array.from({ length: count }, () => '')
@@ -30,8 +37,10 @@ function emptyNames(count: number): string[] {
 
 export default function App() {
   const [step, setStep] = useState<Step>('settings')
+  const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('hub')
   const [playerCount, setPlayerCount] = useState<SupportedPlayerCount>(5)
   const [names, setNames] = useState<string[]>(() => emptyNames(5))
+  const [cardSkin, setCardSkin] = useState<CardSkinId>(DEFAULT_CARD_SKIN)
   const [roleReveal, setRoleReveal] = useState<RoleRevealPlayer[]>([])
   const [session, setSession] = useState<GameSession | null>(null)
   const [chancellorId, setChancellorId] = useState<string | null>(null)
@@ -61,7 +70,8 @@ export default function App() {
     })
   }
 
-  async function startRoleReveal(resolved: string[]) {
+  async function startRoleReveal() {
+    const resolved = resolvePlayerNames(names.slice(0, playerCount))
     setBusy(true)
     setError(null)
     try {
@@ -88,7 +98,7 @@ export default function App() {
     setStep('nomination')
   }
 
-  async function playAgain() {
+  async function returnToHub() {
     if (session?.gameId) {
       try {
         await deleteGame(session.gameId)
@@ -96,17 +106,27 @@ export default function App() {
         /* session may already be gone */
       }
     }
-    setStep('settings')
     setRoleReveal([])
     setSession(null)
     setChancellorId(null)
     setWin(null)
     setError(null)
+    setSettingsPanel('hub')
+    setStep('settings')
+  }
+
+  async function playAgain() {
+    await returnToHub()
   }
 
   if (step === 'win' && session && win) {
     return (
-      <WinScreen session={session} win={win} onPlayAgain={playAgain} />
+      <WinScreen
+        session={session}
+        win={win}
+        cardSkin={cardSkin}
+        onPlayAgain={() => void playAgain()}
+      />
     )
   }
 
@@ -116,6 +136,7 @@ export default function App() {
         key={legislativeKey}
         session={session}
         chancellorId={chancellorId}
+        cardSkin={cardSkin}
         onSessionChange={handleSessionChange}
         onRoundComplete={() => {
           setChancellorId(null)
@@ -134,6 +155,7 @@ export default function App() {
       <NominationScreen
         key={`nom-${session.roundNumber}-${session.presidentIndex}`}
         session={session}
+        cardSkin={cardSkin}
         onSessionChange={handleSessionChange}
         onGovernmentApproved={(id, nextView) => {
           setSession((prev) =>
@@ -155,44 +177,45 @@ export default function App() {
     return (
       <RoleRevealScreen
         players={roleReveal}
-        onBackToNames={() => {
-          void (async () => {
-            if (session?.gameId) {
-              try {
-                await deleteGame(session.gameId)
-              } catch {
-                /* ignore */
-              }
-            }
-            setRoleReveal([])
-            setSession(null)
-            setStep('names')
-          })()
-        }}
+        cardSkin={cardSkin}
+        onBackToHub={() => void returnToHub()}
         onComplete={beginGame}
       />
     )
   }
 
-  if (step === 'names') {
+  if (step === 'settings' && settingsPanel === 'names') {
     return (
       <NamesScreen
         playerCount={playerCount}
         names={names}
         onNameChange={handleNameChange}
-        onBack={() => setStep('settings')}
-        onContinue={startRoleReveal}
+        onBack={() => setSettingsPanel('hub')}
         busy={busy}
-        error={error}
+      />
+    )
+  }
+
+  if (step === 'settings' && settingsPanel === 'skin') {
+    return (
+      <SkinScreen
+        cardSkin={cardSkin}
+        onCardSkinChange={setCardSkin}
+        onBack={() => setSettingsPanel('hub')}
       />
     )
   }
 
   return (
-    <SettingsScreen
+    <SettingsHubScreen
       playerCount={playerCount}
+      cardSkin={cardSkin}
       onPlayerCountChange={handlePlayerCountChange}
-      onContinue={() => setStep('names')}
+      onOpenNames={() => setSettingsPanel('names')}
+      onOpenSkin={() => setSettingsPanel('skin')}
+      onStartGame={startRoleReveal}
+      busy={busy}
+      error={error}
     />
   )
 }

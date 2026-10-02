@@ -1,7 +1,12 @@
 import type { LawCardDto } from '../api/types'
-import { resolvePlayerCardSkin } from '../cardAssets'
+import {
+  DEFAULT_CARD_SKIN,
+  resolvePlayerCardSkin,
+  resolveRole,
+  type CardSkinId,
+} from '../cardAssets'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
-import { roleLabel, roleToPlayingCard, type Role, type Team } from '../roles'
+import { roleLabel, type Role, type Team } from '../roles'
 import { PlayingCardFace } from './PlayingCardFace'
 
 type VoteBorder = 'ja' | 'nein'
@@ -22,6 +27,8 @@ type Props = {
   /** Enacted cards in play order; ranks shown on filled slots. */
   lawsOnTable?: LawCardDto[]
   roundNumber: number
+  /** Whole-table card-set preset (Option A catalogs). */
+  cardSkin?: CardSkinId
   voteBorders?: Record<string, VoteBorder>
   voteOutcome?: 'approved' | 'rejected' | null
   onDeckTap?: () => void
@@ -99,6 +106,7 @@ export function TableBoard({
   blacksOnTable,
   lawsOnTable = [],
   roundNumber,
+  cardSkin = DEFAULT_CARD_SKIN,
   voteBorders,
   voteOutcome = null,
   onDeckTap,
@@ -117,10 +125,7 @@ export function TableBoard({
   const redLaws = lawsOnTable.filter((c) => c.color === 'red')
   const blackLaws = lawsOnTable.filter((c) => c.color === 'black')
 
-  const roleCardById = new Map<
-    string,
-    { color: 'red' | 'black'; number: number }
-  >()
+  const roleSrcById = new Map<string, string>()
   if (revealRoles) {
     const fascistIndex = { n: 0 }
     const communistIndex = { n: 0 }
@@ -135,7 +140,8 @@ export function TableBoard({
         same = communistIndex.n
         communistIndex.n += 1
       }
-      roleCardById.set(player.id, roleToPlayingCard(role, same))
+      const skin = resolvePlayerCardSkin(player.cardSkin, cardSkin)
+      roleSrcById.set(player.id, resolveRole(skin, role, same))
     }
   }
   return (
@@ -157,13 +163,28 @@ export function TableBoard({
                 onClick={onDeckTap}
               >
                 <span className="deck-pile-card" aria-hidden="true">
-                  <PlayingCardFace color="black" number={1} faceDown />
+                  <PlayingCardFace
+                    color="black"
+                    number={1}
+                    faceDown
+                    skin={cardSkin}
+                  />
                 </span>
                 <span className="deck-pile-card" aria-hidden="true">
-                  <PlayingCardFace color="black" number={1} faceDown />
+                  <PlayingCardFace
+                    color="black"
+                    number={1}
+                    faceDown
+                    skin={cardSkin}
+                  />
                 </span>
                 <span className="deck-pile-card" aria-hidden="true">
-                  <PlayingCardFace color="black" number={1} faceDown />
+                  <PlayingCardFace
+                    color="black"
+                    number={1}
+                    faceDown
+                    skin={cardSkin}
+                  />
                 </span>
               </button>
             )}
@@ -215,6 +236,7 @@ export function TableBoard({
                       <PlayingCardFace
                         color="red"
                         number={card.number}
+                        skin={cardSkin}
                       />
                     )}
                   </span>
@@ -245,6 +267,7 @@ export function TableBoard({
                       <PlayingCardFace
                         color="black"
                         number={card.number}
+                        skin={cardSkin}
                       />
                     )}
                   </span>
@@ -282,7 +305,7 @@ export function TableBoard({
               <>
                 <div
                   className={
-                    revealRoles && roleCardById.has(player.id)
+                    revealRoles && roleSrcById.has(player.id)
                       ? 'seat-role-card is-revealed'
                       : 'seat-role-card'
                   }
@@ -293,21 +316,24 @@ export function TableBoard({
                       : 'Role (hidden)'
                   }
                 >
-                  {/* Pass-and-play: seat shows this player's skin back, then
-                      face on reveal. Networked multiplayer can omit the back
-                      until win reveal — still use player.cardSkin for the face. */}
-                  {revealRoles && roleCardById.has(player.id) ? (
+                  {/* Pass-and-play: seat shows table (or seat) skin back, then
+                      face on reveal via resolveRole / resolveHitler. */}
+                  {revealRoles && roleSrcById.has(player.id) ? (
                     <PlayingCardFace
-                      color={roleCardById.get(player.id)!.color}
-                      number={roleCardById.get(player.id)!.number}
-                      skin={resolvePlayerCardSkin(player.cardSkin)}
+                      color="black"
+                      number={1}
+                      skin={resolvePlayerCardSkin(player.cardSkin, cardSkin)}
+                      src={roleSrcById.get(player.id)}
+                      alt={
+                        player.role ? `${roleLabel(player.role)} role card` : 'Role'
+                      }
                     />
                   ) : (
                     <PlayingCardFace
                       color="black"
                       number={1}
                       faceDown
-                      skin={resolvePlayerCardSkin(player.cardSkin)}
+                      skin={resolvePlayerCardSkin(player.cardSkin, cardSkin)}
                     />
                   )}
                 </div>

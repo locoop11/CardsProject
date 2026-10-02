@@ -13,6 +13,10 @@ import {
   type GameSession,
   type WinResult,
 } from '../gameSession'
+import {
+  DEFAULT_CARD_SKIN,
+  type CardSkinId,
+} from '../cardAssets'
 import { ConfirmOverlay } from './ConfirmOverlay'
 import { LawCardView } from './LawCardView'
 import { TableBoard } from './TableBoard'
@@ -28,6 +32,7 @@ type Phase =
 type Props = {
   session: GameSession
   chancellorId: string
+  cardSkin?: CardSkinId
   onSessionChange: (session: GameSession) => void
   onRoundComplete: () => void
   onWin: (win: WinResult) => void
@@ -36,6 +41,7 @@ type Props = {
 export function LegislativeScreen({
   session,
   chancellorId,
+  cardSkin = DEFAULT_CARD_SKIN,
   onSessionChange,
   onRoundComplete,
   onWin,
@@ -137,6 +143,7 @@ export function LegislativeScreen({
         blacksOnTable={session.blacksOnTable}
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
+        cardSkin={cardSkin}
       />
 
       {error && (
@@ -160,6 +167,7 @@ export function LegislativeScreen({
               <LawCardView
                 key={card.id}
                 card={card}
+                cardSkin={cardSkin}
                 faceDown={cardsFaceDown}
                 selected={selectedId === card.id}
                 onSelect={

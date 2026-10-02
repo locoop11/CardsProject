@@ -12,11 +12,16 @@ import {
 } from '../gameSession'
 import { ConfirmOverlay } from './ConfirmOverlay'
 import { TableBoard } from './TableBoard'
+import {
+  DEFAULT_CARD_SKIN,
+  type CardSkinId,
+} from '../cardAssets'
 
 type Phase = 'nominate' | 'voting' | 'reveal' | 'topEnactNotice'
 
 type Props = {
   session: GameSession
+  cardSkin?: CardSkinId
   onSessionChange: (session: GameSession) => void
   onGovernmentApproved: (chancellorId: string, view: PublicView) => void
   onWin: (win: WinResult) => void
@@ -32,6 +37,7 @@ function isApprovedResult(action: ActionResponse): boolean {
 
 export function NominationScreen({
   session,
+  cardSkin = DEFAULT_CARD_SKIN,
   onSessionChange,
   onGovernmentApproved,
   onWin,
@@ -317,6 +323,7 @@ export function NominationScreen({
         blacksOnTable={session.blacksOnTable}
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
+        cardSkin={cardSkin}
         voteBorders={voteBorders}
         voteOutcome={voteOutcome}
         deckEnabled={

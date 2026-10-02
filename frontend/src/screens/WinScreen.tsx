@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import type { CardSkinId } from '../cardAssets'
+import { DEFAULT_CARD_SKIN } from '../cardAssets'
 import {
   president,
   type GameSession,
@@ -11,6 +13,7 @@ import { TableBoard } from './TableBoard'
 type Props = {
   session: GameSession
   win: WinResult
+  cardSkin?: CardSkinId
   onPlayAgain: () => void
 }
 
@@ -28,7 +31,12 @@ function winMessage(win: WinResult): string {
   return `${side} Win: ${reason}`
 }
 
-export function WinScreen({ session, win, onPlayAgain }: Props) {
+export function WinScreen({
+  session,
+  win,
+  cardSkin = DEFAULT_CARD_SKIN,
+  onPlayAgain,
+}: Props) {
   const [showPlayAgain, setShowPlayAgain] = useState(false)
 
   useEffect(() => {
@@ -60,6 +68,7 @@ export function WinScreen({ session, win, onPlayAgain }: Props) {
         blacksOnTable={session.blacksOnTable}
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
+        cardSkin={cardSkin}
         revealRoles
         winSummary={{ winner: win.winner, message: winMessage(win) }}
       />

@@ -7,9 +7,7 @@ type Props = {
   names: string[]
   onNameChange: (index: number, value: string) => void
   onBack: () => void
-  onContinue: (resolvedNames: string[]) => void | Promise<void>
   busy?: boolean
-  error?: string | null
 }
 
 export function NamesScreen({
@@ -17,9 +15,7 @@ export function NamesScreen({
   names,
   onNameChange,
   onBack,
-  onContinue,
   busy = false,
-  error = null,
 }: Props) {
   const previewResolved = useMemo(
     () => resolvePlayerNames(names.slice(0, playerCount)),
@@ -28,64 +24,59 @@ export function NamesScreen({
   const duplicates = hasDuplicateNames(previewResolved)
 
   return (
-    <main className="screen names-screen">
-      <header className="screen-header">
+    <main className="screen settings-screen settings-hub">
+      <div className="settings-hub-backdrop" aria-hidden="true">
+        <div className="table-felt settings-hub-felt">
+          <div className="table-oval settings-hub-oval" />
+        </div>
+      </div>
+
+      <header className="settings-hub-header">
         <p className="brand">Secret Cards</p>
         <h1>Player names</h1>
-        <p className="lede">
-          One name per seat. Leave a field blank to use Player 1, Player 2, …
-        </p>
       </header>
 
-      <section className="settings-block" aria-label="Player names">
-        <ul className="name-list">
-          {Array.from({ length: playerCount }, (_, i) => (
-            <li key={i} className="name-row">
-              <label htmlFor={`player-name-${i}`}>Seat {i + 1}</label>
-              <input
-                id={`player-name-${i}`}
-                type="text"
-                autoComplete="off"
-                placeholder={`Player ${i + 1}`}
-                value={names[i] ?? ''}
-                onChange={(e) => onNameChange(i, e.target.value)}
-              />
-            </li>
-          ))}
-        </ul>
-
-        {duplicates && (
-          <p className="warning" role="status">
-            Duplicate names are allowed, but they may be confusing at the
-            table.
+      <div className="settings-hub-options">
+        <div className="settings-hub-options-inner">
+          <p className="lede">
+            One name per seat. Leave a field blank to use Player 1, Player 2, …
           </p>
-        )}
-      </section>
 
-      {error && (
-        <p className="warning" role="alert">
-          {error}
-        </p>
-      )}
+          <section className="settings-block" aria-label="Player names">
+            <ul className="name-list">
+              {Array.from({ length: playerCount }, (_, i) => (
+                <li key={i} className="name-row">
+                  <label htmlFor={`player-name-${i}`}>Seat {i + 1}</label>
+                  <input
+                    id={`player-name-${i}`}
+                    type="text"
+                    autoComplete="off"
+                    placeholder={`Player ${i + 1}`}
+                    value={names[i] ?? ''}
+                    onChange={(e) => onNameChange(i, e.target.value)}
+                  />
+                </li>
+              ))}
+            </ul>
 
-      <footer className="screen-actions">
+            {duplicates && (
+              <p className="warning" role="status">
+                Duplicate names are allowed, but they may be confusing at the
+                table.
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <footer className="settings-hub-footer">
         <button
           type="button"
           className="btn primary"
           disabled={busy}
-          onClick={() =>
-            void onContinue(resolvePlayerNames(names.slice(0, playerCount)))
-          }
-        >
-          {busy ? 'Starting…' : 'Continue'}
-        </button>
-        <button
-          type="button"
-          className="btn ghost"
-          disabled={busy}
           onClick={onBack}
         >
-          Back to settings
+          Back
         </button>
       </footer>
     </main>

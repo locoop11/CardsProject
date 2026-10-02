@@ -1,8 +1,13 @@
 import type { LawCardModel } from '../lawCards'
+import {
+  DEFAULT_CARD_SKIN,
+  type CardSkinId,
+} from '../cardAssets'
 import { PlayingCardFace } from './PlayingCardFace'
 
 type Props = {
   card: LawCardModel
+  cardSkin?: CardSkinId
   selected?: boolean
   onSelect?: () => void
   disabled?: boolean
@@ -11,6 +16,7 @@ type Props = {
 
 export function LawCardView({
   card,
+  cardSkin = DEFAULT_CARD_SKIN,
   selected,
   onSelect,
   disabled,
@@ -35,6 +41,7 @@ export function LawCardView({
       color={card.color}
       number={card.number}
       faceDown={faceDown}
+      skin={cardSkin}
     />
   )
 
