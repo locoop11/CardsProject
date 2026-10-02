@@ -24,10 +24,10 @@ This file does not schedule implementation. Items below stay out of the v1 pass-
 | Action-log / stats **persistence** and replay storage | `action_log` is appended in-process; not persisted or exposed on public views |
 | Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub (names / count / card skin) is already shipped — this row is only about engine rule toggles |
 | Other games built on `cards/` | Package stays game-agnostic; no second game |
-| Cryptographically strong default shuffle | v1 uses injectable Python PRNG; upgrade to OS/`SystemRandom` default tracked for before online fairness (keep injectable `rng` for tests) |
 
 ## Related (tracked elsewhere)
 
+- **Fair randomness / rule probabilities (next up)** → `01-fair-randomness-and-probabilities.md`
 - Pre-game settings hub + whole-table skin presets — shipped (see living `ai-context/frontend-map.md` / `decisions.md`)
 - Multi-device / per-player privacy path → `02-multi-device-privacy.md`
 - Per-player / account-owned skin packs (future) → `03-per-player-owned-skins.md`

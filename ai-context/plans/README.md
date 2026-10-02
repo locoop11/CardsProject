@@ -1,35 +1,36 @@
 # Plans (future work only)
 
-Ordered implementation plans for work **not yet done**. Living system truth stays in the sibling `ai-context/*.md` files — not here.
+Ordered plans for work **not yet done**. Living system truth stays in the sibling `ai-context/*.md` files — not here.
 
-## Rules
+## Two plan kinds (keep them distinct)
 
-1. **No obsolete content.** Do not copy finished phases, old “gaps” tables, or historical code sketches from root plan files.
-2. **Mine, don’t move.** Legacy root plans (if still present) are historical sources only. Extract unfinished work here; never treat them as living truth.
-3. **One concern per file.** Clear goal, scope, acceptance criteria, dependencies.
-4. **When shipped:** remove the plan file (or the Documentation Agent archives it out of this folder). Finished work updates living `ai-context/` maps instead.
+| Kind | Filename | Purpose |
+|------|----------|---------|
+| **Feature** | `NN-short-kebab-name.md` | New capability, enhancement, or deferred product work |
+| **Bug** | `bug-NN-short-kebab-name.md` | Fix incorrect behavior; must include symptom + root cause from code |
 
-## Naming (order + distinction)
+Rules that apply to **both**:
 
-Use a zero-padded sequence prefix so agents can sort by priority:
+1. **No obsolete content.** Do not copy finished work or historical sketches.
+2. **One concern per file.**
+3. **When shipped:** remove the file (or archive out of this folder). Living maps update via Documentation Agent.
+
+**Do not** mix kinds in one file. **Do not** use a feature skeleton for a bug (or vice versa). Bug files always start with the `bug-` prefix so they sort and read as defects.
+
+Lower `NN` = higher priority **within that kind**. Feature `01` and bug `01` are unrelated queues; triage bugs vs features with the human when both are open.
+
+---
+
+## Feature plan — naming & skeleton
 
 ```text
 NN-short-kebab-name.md
 ```
 
-Examples:
-
-- `01-multi-device-privacy.md`
-- `02-ui-legislative-on-table.md`
-- `99-out-of-scope.md` — reserved for explicit “won’t do in v1” items (not a build queue)
-
-Lower number = do sooner. Gaps in numbering are fine after deletions.
-
-## Suggested plan skeleton
-
 ```markdown
 # NN — Title
 
+**Kind:** feature
 **Status:** proposed | ready | blocked
 **Depends on:** (other plan ids, or none)
 
@@ -45,13 +46,59 @@ Product or technical reason (non-obsolete only).
 - [ ] …
 
 ## Notes for implementers
-Pointers into living ai-context files (contracts, maps) — not duplicated rules.
+Pointers into living ai-context files — not duplicated rules.
 ```
 
-## Current plans
+Special: `99-out-of-scope.md` — explicit “won’t do in v1” (not a build queue).
+
+---
+
+## Bug plan — naming & skeleton
+
+```text
+bug-NN-short-kebab-name.md
+```
+
+```markdown
+# bug-NN — Short title
+
+**Kind:** bug
+**Status:** proposed | ready | blocked
+**Severity:** blocker | high | medium | low
+**Layer:** UI | server | both
+**Depends on:** (none, or related plans)
+
+## Symptom
+What the user / logs show (expected vs actual).
+
+## Root cause
+Evidence-based; cite files / behavior. Do not guess.
+
+## Fix
+What to change and why it addresses the root cause (no large production code dumps).
+
+## In scope / out of scope
+
+## Acceptance criteria
+- [ ] …
+
+## Notes for implementers
+Pointers into living ai-context / code.
+```
+
+---
+
+## Current feature plans
 
 | File | Concern |
 |------|---------|
+| `01-fair-randomness-and-probabilities.md` | CSPRNG defaults; fair shuffles; 11/6 + role probability accuracy |
 | `02-multi-device-privacy.md` | Per-device role/hand privacy (API building block exists; product path not wired) |
 | `03-per-player-owned-skins.md` | Future — accounts; per-player Hitler/role packs; laws undecided |
-| `99-out-of-scope.md` | Explicit v1 non-goals (eliminations, online multiplayer, persistence, engine settings toggles UI, crypto shuffle, other games) |
+| `99-out-of-scope.md` | Explicit v1 non-goals |
+
+## Current bug plans
+
+| File | Concern |
+|------|---------|
+| `bug-01-hand-403-after-chancellor-enact.md` | GET `/hand` 403 after enact — legislative effect re-fetches with new president id |
