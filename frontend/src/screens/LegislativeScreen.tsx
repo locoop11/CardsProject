@@ -54,6 +54,8 @@ export function LegislativeScreen({
   const [enactedColor, setEnactedColor] = useState<'red' | 'black' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  /** President who started this legislative mount (stable across enact advance). */
+  const [handViewerId] = useState(() => president(session).id)
 
   const prez = president(session)
   const chancellor = playerById(session, chancellorId)
@@ -62,7 +64,7 @@ export function LegislativeScreen({
     let cancelled = false
     void (async () => {
       try {
-        const res = await getHand(session.gameId, prez.id)
+        const res = await getHand(session.gameId, handViewerId)
         if (cancelled) return
         setHand(res.cards)
         setPhase('presidentSelect')
@@ -74,7 +76,7 @@ export function LegislativeScreen({
     return () => {
       cancelled = true
     }
-  }, [session.gameId, prez.id])
+  }, [session.gameId, handViewerId])
 
   async function confirmPresidentDiscard() {
     if (pendingDiscardId === null || hand.length !== 3 || busy) return
