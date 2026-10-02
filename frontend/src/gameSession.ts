@@ -1,4 +1,5 @@
 import type { LawCardDto, PublicView } from './api/types'
+import type { CardSkinId } from './cardAssets'
 import type { Role, Team } from './roles'
 
 /** Seconds each player gets to cast Ja/Nein during pass-and-play voting. */
@@ -12,6 +13,11 @@ export type TablePlayer = {
   name: string
   role?: Role
   team?: Team
+  /**
+   * Optional seat role-card art pack. Frontend-only for now; when unset,
+   * seats use the table skin. Future: profile / lobby picker or API field.
+   */
+  cardSkin?: CardSkinId
 }
 
 export type WinResult = {
@@ -44,6 +50,7 @@ export type GameSession = {
 export function sessionFromView(
   view: PublicView,
   rolesById?: Map<string, { role: Role; team: Team }>,
+  skinsById?: Map<string, CardSkinId>,
 ): GameSession {
   return {
     gameId: view.game_id,
@@ -54,6 +61,7 @@ export function sessionFromView(
         name: p.name,
         role: roleInfo?.role,
         team: roleInfo?.team,
+        cardSkin: skinsById?.get(p.id),
       }
     }),
     presidentIndex: view.president_index,
@@ -79,7 +87,12 @@ export function mergeView(
       .filter((p) => p.role && p.team)
       .map((p) => [p.id, { role: p.role!, team: p.team! }]),
   )
-  return sessionFromView(view, rolesById)
+  const skinsById = new Map(
+    session.players
+      .filter((p) => p.cardSkin)
+      .map((p) => [p.id, p.cardSkin!]),
+  )
+  return sessionFromView(view, rolesById, skinsById)
 }
 
 export function president(session: GameSession): TablePlayer {

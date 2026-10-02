@@ -332,7 +332,8 @@ body {
   transform-origin: center center;
 }
 
-.role-reveal-card .playing-card-svg {
+.role-reveal-card .playing-card-svg,
+.role-reveal-card .playing-card-img {
   width: 100%;
   height: 100%;
   display: block;
@@ -528,11 +529,18 @@ body {
   color: inherit;
 }
 
-.playing-card-svg {
+.playing-card-svg,
+.playing-card-img {
   width: 100%;
   height: 100%;
   display: block;
   pointer-events: none;
+}
+
+.playing-card-img {
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* --- Felt table board (pass-and-play public view) --- */
@@ -796,7 +804,8 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-.table-law-slot .playing-card-svg {
+.table-law-slot .playing-card-svg,
+.table-law-slot .playing-card-img {
   width: 100%;
   height: 100%;
 }
@@ -888,13 +897,7 @@ button.table-seat:disabled {
   height: 3.6rem;
   border-radius: 0.35rem;
   border: 1.5px solid rgba(255, 255, 255, 0.65);
-  background:
-    radial-gradient(circle at 50% 40%, #2a4a6a 0%, #1a2a3c 70%),
-    repeating-linear-gradient(
-      -18deg,
-      #1e2a36 0 3px,
-      #243242 3px 6px
-    );
+  background: #1a2a3c;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.28),
     0 6px 14px rgba(0, 0, 0, 0.22);
@@ -908,9 +911,11 @@ button.table-seat:disabled {
   animation: role-flip-in 0.55s ease-out both;
 }
 
-.seat-role-card .playing-card-svg {
+.seat-role-card .playing-card-svg,
+.seat-role-card .playing-card-img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 @keyframes role-flip-in {

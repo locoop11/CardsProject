@@ -1,4 +1,5 @@
 import type { LawCardDto } from '../api/types'
+import { resolvePlayerCardSkin } from '../cardAssets'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
 import { roleLabel, roleToPlayingCard, type Role, type Team } from '../roles'
 import { PlayingCardFace } from './PlayingCardFace'
@@ -292,10 +293,21 @@ export function TableBoard({
                       : 'Role (hidden)'
                   }
                 >
-                  {revealRoles && roleCardById.has(player.id) && (
+                  {/* Pass-and-play: seat shows this player's skin back, then
+                      face on reveal. Networked multiplayer can omit the back
+                      until win reveal — still use player.cardSkin for the face. */}
+                  {revealRoles && roleCardById.has(player.id) ? (
                     <PlayingCardFace
                       color={roleCardById.get(player.id)!.color}
                       number={roleCardById.get(player.id)!.number}
+                      skin={resolvePlayerCardSkin(player.cardSkin)}
+                    />
+                  ) : (
+                    <PlayingCardFace
+                      color="black"
+                      number={1}
+                      faceDown
+                      skin={resolvePlayerCardSkin(player.cardSkin)}
                     />
                   )}
                 </div>
