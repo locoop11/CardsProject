@@ -94,6 +94,16 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ---
 
+## v1 shuffle: PRNG is enough for pass-and-play
+
+**Chosen:** Keep Python’s injectable PRNG (`random.Random`) for v1 local shared-device play. Do **not** block v1 on `secrets.SystemRandom`.
+
+**Why:** Law composition (11 black / 6 red), role tables, and Fisher–Yates shuffles already give rule-correct odds for kitchen-table play. Cryptographic RNG matters when games are online and players cannot trust a shared device — that is **v2**, listed under `plans/99-out-of-scope.md`.
+
+**Rejected for v1:** Treating crypto RNG as a ship blocker for pass-and-play.
+
+---
+
 ## Settings hub (not a separate names→start step)
 
 **Chosen:** Pre-game is a **hub** with nested panels (Names, Card set skin). **Start game** lives on the hub and creates the API session.

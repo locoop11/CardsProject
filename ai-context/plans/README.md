@@ -90,15 +90,14 @@ Pointers into living ai-context / code.
 
 ## Current feature plans
 
+**v1 pass-and-play** (local shared device, clients can play with correct law/role odds) is treated as **complete** for product scope. Open numbered plans below are **post-v1 / online** work unless the human promotes one.
+
 | File | Concern |
 |------|---------|
-| `01-fair-randomness-and-probabilities.md` | CSPRNG defaults; fair shuffles; 11/6 + role probability accuracy |
-| `02-multi-device-privacy.md` | Per-device role/hand privacy (API building block exists; product path not wired) |
+| `02-multi-device-privacy.md` | Per-device role/hand privacy — building block for online / multi-client (v2) |
 | `03-per-player-owned-skins.md` | Future — accounts; per-player Hitler/role packs; laws undecided |
-| `99-out-of-scope.md` | Explicit v1 non-goals |
+| `99-out-of-scope.md` | Explicit v1 non-goals (incl. crypto RNG — defer to online v2) |
 
 ## Current bug plans
 
-| File | Concern |
-|------|---------|
-| `bug-01-hand-403-after-chancellor-enact.md` | GET `/hand` 403 after enact — legislative effect re-fetches with new president id |
+_(None — add `bug-NN-…` files here when open defects are planned.)_

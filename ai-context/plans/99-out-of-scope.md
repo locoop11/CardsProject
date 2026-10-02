@@ -24,12 +24,12 @@ This file does not schedule implementation. Items below stay out of the v1 pass-
 | Action-log / stats **persistence** and replay storage | `action_log` is appended in-process; not persisted or exposed on public views |
 | Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub (names / count / card skin) is already shipped — this row is only about engine rule toggles |
 | Other games built on `cards/` | Package stays game-agnostic; no second game |
+| Cryptographically strong default RNG (`secrets.SystemRandom`) | v1 pass-and-play already has correct 11/6 composition, role tables, and unbiased Fisher–Yates shuffles via Python’s PRNG — good enough for local shared-device play. Crypto RNG + consistent mid-game RNG wiring is a **v2 / online** hardening when players cannot trust a shared device |
 
 ## Related (tracked elsewhere)
 
-- **Fair randomness / rule probabilities (next up)** → `01-fair-randomness-and-probabilities.md`
 - Pre-game settings hub + whole-table skin presets — shipped (see living `ai-context/frontend-map.md` / `decisions.md`)
-- Multi-device / per-player privacy path → `02-multi-device-privacy.md`
+- Multi-device / per-player privacy path → `02-multi-device-privacy.md` (v2-oriented)
 - Per-player / account-owned skin packs (future) → `03-per-player-owned-skins.md`
 
 ## Acceptance criteria

@@ -2,7 +2,7 @@
 
 **Status:** proposed  
 **Depends on:** none (API role endpoint already exists)  
-**Priority:** next among active build plans
+**Priority:** post-v1 / online (not a v1 pass-and-play blocker)
 
 ## Goal
 
