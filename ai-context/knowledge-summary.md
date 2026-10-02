@@ -28,8 +28,9 @@ Engine functions mutate `GameState` in place, log actions, raise `EngineError` o
 
 ## Frontend ownership
 
-`App` steps: settings → names → roleReveal → nomination ↔ legislative → win.  
-`GameSession` mirrors `PublicView`; roles kept client-side from create via `mergeView`. Screens in `frontend/src/screens/`; API via `api/client.ts`. Card art: `public/cards/<skin>/`.
+`App` steps: **settings** (hub / names / skin panels) → roleReveal → nomination ↔ legislative → win.  
+Start game from the hub. Whole-table **`cardSkin`** (`default` \| `party`) is client-only and passed into screens. Art via `cardAssets` catalogs (Hitler / role / law); party generic back matches classic `default/back.png`.  
+`GameSession` mirrors `PublicView`; roles kept from create via `mergeView`. API via `api/client.ts`.
 
 ## Game rules (compressed)
 
@@ -43,4 +44,5 @@ Engine functions mutate `GameState` in place, log actions, raise `EngineError` o
 - Rules live in `secret_cards.engine.*`, not in UI or route handlers
 - Public data via `views`; hands viewer-scoped
 - `cards` must not import `secret_cards`
-- Contracts: see `api-contracts.md`; module map: `backend-map.md` / `frontend-map.md`; rationale: `decisions.md`
+- Card UI uses resolve helpers only; no pack-shape branching in screens
+- Contracts: `api-contracts.md`; maps: `backend-map.md` / `frontend-map.md`; rationale: `decisions.md`; backlog: `plans/`

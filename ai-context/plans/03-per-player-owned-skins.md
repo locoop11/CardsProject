@@ -1,7 +1,7 @@
 # 03 — Per-player owned skin packs (future)
 
 **Status:** proposed (deferred — not v1)  
-**Depends on:** `01-settings-hub-menu.md` (Option A catalogs + whole-table preset), accounts / identity (not built)
+**Depends on:** whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker), accounts / identity (not built)
 
 ## Goal
 
@@ -25,15 +25,15 @@ Product direction: skins become collectible / owned, not only a single table pre
 - How **law** cards pick art when players own different law packs (shared deck / majority / host preset / etc.).
 - Implementation of auth, store, purchases, or multiplayer accounts (blocked on product + backend).
 
-## Relationship to v1 (`01`)
+## Relationship to current app
 
-| Now (`01`) | Later (`03`) |
-|------------|----------------|
+| Now (shipped) | Later (`03`) |
+|---------------|----------------|
 | One `cardSkin` for the whole table | Per-player overrides for Hitler / roles |
 | Pack = full preset (three catalogs) | Player may mix owned packs per catalog |
 | No accounts | Requires accounts + ownership |
 
-Do **not** build `03` while implementing `01`. Keep `resolveHitler` / `resolveRole` / `resolveLaw(skinId, …)` so `skinId` can later come from the player profile.
+Keep `resolveHitler` / `resolveRole` / `resolveLaw(skinId, …)` so `skinId` can later come from the player profile.
 
 ## Acceptance criteria (for when scheduled)
 
@@ -44,6 +44,6 @@ Do **not** build `03` while implementing `01`. Keep `resolveHitler` / `resolveRo
 
 ## Notes for implementers
 
-- Option A catalogs: see `01-settings-hub-menu.md`.
+- Option A catalogs: live in `frontend/src/cardAssets.ts` and settings skin UI; settled direction in `ai-context/decisions.md`.
 - Accounts / online multiplayer also listed under `99-out-of-scope.md` until promoted.
 - Prefer extending resolve helpers over scattering per-player conditionals in every screen.

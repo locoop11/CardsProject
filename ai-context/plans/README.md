@@ -5,7 +5,7 @@ Ordered implementation plans for work **not yet done**. Living system truth stay
 ## Rules
 
 1. **No obsolete content.** Do not copy finished phases, old “gaps” tables, or historical code sketches from root plan files.
-2. **Mine, don’t move.** Root files `inicial_Plan.md`, `class_design.md`, and `planFileUI.md` are temporary sources. The Planner extracts only still-valid unfinished work into new files here; then those root files can be deleted.
+2. **Mine, don’t move.** Legacy root plans (if still present) are historical sources only. Extract unfinished work here; never treat them as living truth.
 3. **One concern per file.** Clear goal, scope, acceptance criteria, dependencies.
 4. **When shipped:** remove the plan file (or the Documentation Agent archives it out of this folder). Finished work updates living `ai-context/` maps instead.
 
@@ -52,8 +52,6 @@ Pointers into living ai-context files (contracts, maps) — not duplicated rules
 
 | File | Concern |
 |------|---------|
-| `01-settings-hub-menu.md` | Settings hub; whole-table skin presets (Option A: Hitler / role / law) |
 | `02-multi-device-privacy.md` | Per-device role/hand privacy (API building block exists; product path not wired) |
 | `03-per-player-owned-skins.md` | Future — accounts; per-player Hitler/role packs; laws undecided |
-| `04-settings-hub-aesthetics.md` | **Next up** — “Players Number” dropdown; blurred board backdrop on hub |
 | `99-out-of-scope.md` | Explicit v1 non-goals (eliminations, online multiplayer, persistence, engine settings toggles UI, crypto shuffle, other games) |

@@ -80,13 +80,27 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ## File-based card skins
 
-**Chosen (direction):** Art under `public/cards/<skinId>/`. A pack exposes **three catalogs** — **Hitler**, **role**, **law** (Option A). v1 settings pick one **whole-table preset**; UI resolves art via helpers (`resolveHitler` / `resolveRole` / `resolveLaw`).
+**Chosen:** Art under `public/cards/<skinId>/`. A pack exposes **three catalogs** — **Hitler**, **role**, **law** (Option A). v1 settings pick one **whole-table preset** (`SkinScreen`); UI resolves art via helpers (`resolveHitler` / `resolveRole` / `resolveLaw` / `cardBackSrc`). Skin choice is **client-only** (not on the API).
 
-**`default` rules:** Hitler = Ace of Spades; law faces = normal poker cards **excluding** Ace of Spades; roles also use poker faces (Hitler still AS).
+**Registered packs today:** `default` (Classic poker), `party` (Party).
+
+**`default` rules:** Hitler = Ace of Spades; law faces = poker cards **excluding** Ace of Spades; roles use poker faces (Hitler still AS).
+
+**`party` rules:** Dedicated hitler/role/law image files; optional team-colored backs. **Generic face-down (`back.png`) is the same art as `default/back.png`** so undrawn/deck backs stay consistent with the classic pack unless a future pack overrides it.
 
 **Why:** Swap packs without touching game rules; catalogs match how the game talks about cards; leaves a clean path to per-player owned packs later.
 
-**Deferred:** Accounts and per-player owned / mixed packs (e.g. different Hitler art per seat) — see `plans/03-per-player-owned-skins.md`. Law personalization undecided.
+**Deferred:** Accounts and per-player owned / mixed packs — see `plans/03-per-player-owned-skins.md`.
+
+---
+
+## Settings hub (not a separate names→start step)
+
+**Chosen:** Pre-game is a **hub** with nested panels (Names, Card set skin). **Start game** lives on the hub and creates the API session.
+
+**Why:** One place for table options before pass-and-play; matches shipped UI after settings-hub plans.
+
+**Rejected for v1:** Deep-linked routes per settings page; mixing skin choice into the API create payload.
 
 ---
 

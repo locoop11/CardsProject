@@ -41,6 +41,9 @@ frontend/public/cards/<skinId>/
 ```
 
 If law files are omitted, `resolveLaw` falls back to the default poker law catalog.
+
+**`party` note:** Generic `back.png` is the **same face-down art as `default/back.png`**. Team backs (`back-fascist` / `back-communist`) remain party-specific.
+
 ## Add a whole-table preset
 
 1. Create `public/cards/mySkin/` with the files above.

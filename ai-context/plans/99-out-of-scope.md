@@ -22,13 +22,13 @@ This file does not schedule implementation. Items below stay out of the v1 pass-
 | Player eliminations / presidential powers / investigation powers | `Player.is_alive` exists but unused; no powers in engine |
 | Full networked multiplayer (matchmaking, accounts, durable rooms, multi-worker sessions) | In-memory `SessionStore` only; no auth/DB |
 | Action-log / stats **persistence** and replay storage | `action_log` is appended in-process; not persisted or exposed on public views |
-| Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub (names / count / card skin) is tracked in `01-settings-hub-menu.md`, not this row |
+| Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub (names / count / card skin) is already shipped — this row is only about engine rule toggles |
 | Other games built on `cards/` | Package stays game-agnostic; no second game |
 | Cryptographically strong default shuffle | v1 uses injectable Python PRNG; upgrade to OS/`SystemRandom` default tracked for before online fairness (keep injectable `rng` for tests) |
 
 ## Related (tracked elsewhere)
 
-- Pre-game settings hub + whole-table skin presets (Option A: Hitler / role / law) → `01-settings-hub-menu.md`
+- Pre-game settings hub + whole-table skin presets — shipped (see living `ai-context/frontend-map.md` / `decisions.md`)
 - Multi-device / per-player privacy path → `02-multi-device-privacy.md`
 - Per-player / account-owned skin packs (future) → `03-per-player-owned-skins.md`
 

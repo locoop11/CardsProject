@@ -1,6 +1,6 @@
 # Agent knowledge index
 
-Living documentation of **how the system works today**. Read these before planning or coding. Do not treat root plan files (`class_design.md`, `inicial_Plan.md`, `planFileUI.md`) as current truth — they are temporary sources until the Planner mines them into `plans/`.
+Living documentation of **how the system works today**. Read these before planning or coding. Do not treat root plan files (`class_design.md`, `inicial_Plan.md`, `planFileUI.md`) as current truth — historical only; unfinished work lives under `plans/`.
 
 | File / folder | Open when you need… |
 |---------------|---------------------|

@@ -21,9 +21,10 @@ Open the Vite URL (usually http://localhost:5173). API calls are proxied to port
 
 ## Docs
 
-- Locked plan: `inicial_Plan.md`
-- Class design: `class_design.md`
-- Local API shapes: `docs/api.md`
+- **Agent / living system context:** `ai-context/` (start with `ai-context/README.md`)
+- **Future work plans:** `ai-context/plans/`
+- Human API sketch (may lag): `docs/api.md` — prefer `ai-context/api-contracts.md`
+- Legacy root plans (`inicial_Plan.md`, `class_design.md`, `planFileUI.md`) are historical sources only; do not treat as current truth
 
 ## Tests
 

@@ -2,7 +2,7 @@
 
 **Status:** proposed  
 **Depends on:** none (API role endpoint already exists)  
-**Priority:** after `01-settings-hub-menu.md`
+**Priority:** next among active build plans
 
 ## Goal
 

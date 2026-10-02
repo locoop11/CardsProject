@@ -30,8 +30,11 @@
 ## Frontend patterns
 
 - **Step machine in `App`**, not a router — matches linear pass-and-play flow.
+- **Settings panels** (`hub` \| `names` \| `skin`) nest under the `settings` step; gameplay steps stay flat.
+- **Whole-table `cardSkin`** held in `App` and passed as props; not part of `PublicView`.
+- **Card art resolve helpers only** (`resolveHitler` / `resolveRole` / `resolveLaw` / `cardBackSrc`) — screens must not branch on pack file layout.
 - **Screen-local sub-phases** for nomination voting and legislative handoffs.
-- **`mergeView`** after every successful action so roles/skins survive public-view updates.
+- **`mergeView`** after every successful action so roles/per-seat skins survive public-view updates.
 - Confirm overlays before irreversible votes / discards / enacts.
 - Device-pass UX: face-down cards and timed voting windows (`SECONDS_PER_VOTER`).
 
