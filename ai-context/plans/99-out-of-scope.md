@@ -5,32 +5,37 @@
 
 ## Goal
 
-Record unfinished ideas from the legacy root plans that remain **true** and are **intentionally not part of v1**, so agents do not treat them as current implementation work.
+Record unfinished ideas that remain **intentionally not part of v1**, so agents do not treat them as current v1 implementation work.
 
 ## Why
 
-`inicial_Plan.md` / `class_design.md` / `planFileUI.md` mixed shipped work, phone-UI gaps (now largely done), and deferred product ideas. This file keeps only the deferred “won’t do in v1” list.
+Legacy root plans mixed shipped work and deferred product ideas. This file keeps the deferred “won’t do in v1” list. Items **promoted** into numbered v2/v3 plans are tracked there instead.
 
 ## In scope / out of scope
 
-This file does not schedule implementation. Items below stay out of the v1 pass-and-play product unless a human promotes one into a numbered plan.
+This file does not schedule implementation. Items below stay out of the **v1 pass-and-play** product unless a human promotes one into a numbered plan.
 
 ## Deferred / won’t do in v1
 
 | Item | Still true because… |
 |------|----------------------|
 | Player eliminations / presidential powers / investigation powers | `Player.is_alive` exists but unused; no powers in engine |
-| Full networked multiplayer (matchmaking, accounts, durable rooms, multi-worker sessions) | In-memory `SessionStore` only; no auth/DB |
+| Multi-worker shared game state / durable game rooms as a generic platform | Games still process-local until a future persistence plan beyond `03` rooms |
 | Action-log / stats **persistence** and replay storage | `action_log` is appended in-process; not persisted or exposed on public views |
-| Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub (names / count / card skin) is already shipped — this row is only about engine rule toggles |
+| Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub is shipped — this row is only about engine rule toggles |
 | Other games built on `cards/` | Package stays game-agnostic; no second game |
-| Cryptographically strong default RNG (`secrets.SystemRandom`) | v1 pass-and-play already has correct 11/6 composition, role tables, and unbiased Fisher–Yates shuffles via Python’s PRNG — good enough for local shared-device play. Crypto RNG + consistent mid-game RNG wiring is a **v2 / online** hardening when players cannot trust a shared device |
+| Cryptographically strong default RNG (`secrets.SystemRandom`) | Enough for local shared-device play; crypto RNG is online hardening — promote separately if needed after multi-device |
 
-## Related (tracked elsewhere)
+## Promoted out of this table (tracked as plans)
 
-- Pre-game settings hub + whole-table skin presets — shipped (see living `ai-context/frontend-map.md` / `decisions.md`)
-- Multi-device / per-player privacy path → `02-multi-device-privacy.md` (v2-oriented)
-- Per-player / account-owned skin packs (future) → `03-per-player-owned-skins.md`
+| Item | Plan |
+|------|------|
+| Accounts / authentication | `01-accounts-auth.md` |
+| Bottom-anchor seats + rotation | `02-seat-layout-anchor.md` |
+| Multi-device Option A privacy + rooms/join | `03-multi-device-privacy.md` |
+| Per-player owned skin packs | `04-per-player-owned-skins.md` |
+| Hybrid table-phone local (v3) | `05-hybrid-table-phone-local.md` |
+| Google / social OAuth | `06-google-oauth.md` |
 
 ## Acceptance criteria
 
@@ -40,4 +45,4 @@ This file does not schedule implementation. Items below stay out of the v1 pass-
 ## Notes for implementers
 
 - Do not implement items here “while you’re in the area.”
-- If a deferred item becomes active work, create a new `NN-short-kebab-name.md` and trim it from this table.
+- If a deferred item becomes active work, create/update a numbered plan and trim it from the deferred table above.

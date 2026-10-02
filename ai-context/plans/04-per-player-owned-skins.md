@@ -1,7 +1,8 @@
-# 03 — Per-player owned skin packs (future)
+# 04 — Per-player owned skin packs (future)
 
-**Status:** proposed (deferred — not v1)  
-**Depends on:** whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker), accounts / identity (not built)
+**Kind:** feature  
+**Status:** proposed (deferred — after multi-device)  
+**Depends on:** `01-accounts-auth`; whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker)
 
 ## Goal
 
@@ -23,15 +24,15 @@ Product direction: skins become collectible / owned, not only a single table pre
 **Out of scope until decided**
 
 - How **law** cards pick art when players own different law packs (shared deck / majority / host preset / etc.).
-- Implementation of auth, store, purchases, or multiplayer accounts (blocked on product + backend).
+- Purchases / storefront implementation details until product defines them.
 
 ## Relationship to current app
 
-| Now (shipped) | Later (`03`) |
-|---------------|----------------|
-| One `cardSkin` for the whole table | Per-player overrides for Hitler / roles |
+| Now (shipped / `01`) | Later (`04`) |
+|----------------------|--------------|
+| One `cardSkin` for the whole table (or account table skin when logged in on pass-and-play) | Per-player overrides for Hitler / roles |
 | Pack = full preset (three catalogs) | Player may mix owned packs per catalog |
-| No accounts | Requires accounts + ownership |
+| Accounts in `01` | Ownership + equip enforcement |
 
 Keep `resolveHitler` / `resolveRole` / `resolveLaw(skinId, …)` so `skinId` can later come from the player profile.
 
@@ -44,6 +45,6 @@ Keep `resolveHitler` / `resolveRole` / `resolveLaw(skinId, …)` so `skinId` can
 
 ## Notes for implementers
 
-- Option A catalogs: live in `frontend/src/cardAssets.ts` and settings skin UI; settled direction in `ai-context/decisions.md`.
-- Accounts / online multiplayer also listed under `99-out-of-scope.md` until promoted.
+- Option A catalogs: `frontend/src/cardAssets.ts` and settings skin UI; `ai-context/decisions.md`.
 - Prefer extending resolve helpers over scattering per-player conditionals in every screen.
+- Pass-and-play logged-in behavior in `01` is **whole-table account skin**, not this plan.

@@ -2,6 +2,8 @@
 
 Ordered plans for work **not yet done**. Living system truth stays in the sibling `ai-context/*.md` files — not here.
 
+**Ownership:** Planner Agent maintains files in this folder. Documentation Agent updates living maps (`architecture.md`, contracts, decisions, etc.) after features ship — not these plan files.
+
 ## Two plan kinds (keep them distinct)
 
 | Kind | Filename | Purpose |
@@ -90,13 +92,19 @@ Pointers into living ai-context / code.
 
 ## Current feature plans
 
-**v1 pass-and-play** (local shared device, clients can play with correct law/role odds) is treated as **complete** for product scope. Open numbered plans below are **post-v1 / online** work unless the human promotes one.
+**v1 pass-and-play** is complete for product scope. Open plans below are **v2 / v3** work.
 
-| File | Concern |
-|------|---------|
-| `02-multi-device-privacy.md` | Per-device role/hand privacy — building block for online / multi-client (v2) |
-| `03-per-player-owned-skins.md` | Future — accounts; per-player Hitler/role packs; laws undecided |
-| `99-out-of-scope.md` | Explicit v1 non-goals (incl. crypto RNG — defer to online v2) |
+| File | Concern | Status |
+|------|---------|--------|
+| `01-accounts-auth.md` | Accounts, cookies, username/email + password, display name, account table skin | ready — v2 phase 1 |
+| `02-seat-layout-anchor.md` | Bottom-center seat geometry + viewer rotation helper | ready — v2 phase 2 |
+| `03-multi-device-privacy.md` | Option A privacy, rooms/join, authz, multi-device play | ready — v2 phase 3 |
+| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs | proposed — deferred |
+| `05-hybrid-table-phone-local.md` | v3 hybrid table phone + personal phones | proposed — deferred |
+| `06-google-oauth.md` | Google / social login | proposed — **last** |
+| `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
+
+**Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive. Privacy = `03` only; seat layout = `02-seat-layout-anchor.md`.
 
 ## Current bug plans
 
