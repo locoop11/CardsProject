@@ -80,9 +80,13 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ## File-based card skins
 
-**Chosen:** Art under `public/cards/<skinId>/`; code maps color/number → filename.
+**Chosen (direction):** Art under `public/cards/<skinId>/`. A pack exposes **three catalogs** — **Hitler**, **role**, **law** (Option A). v1 settings pick one **whole-table preset**; UI resolves art via helpers (`resolveHitler` / `resolveRole` / `resolveLaw`).
 
-**Why:** Swap art packs without touching game logic; optional per-player skin later without API change yet.
+**`default` rules:** Hitler = Ace of Spades; law faces = normal poker cards **excluding** Ace of Spades; roles also use poker faces (Hitler still AS).
+
+**Why:** Swap packs without touching game rules; catalogs match how the game talks about cards; leaves a clean path to per-player owned packs later.
+
+**Deferred:** Accounts and per-player owned / mixed packs (e.g. different Hitler art per seat) — see `plans/03-per-player-owned-skins.md`. Law personalization undecided.
 
 ---
 

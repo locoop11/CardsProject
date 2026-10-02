@@ -1,7 +1,8 @@
-# 01 — Multi-device privacy
+# 02 — Multi-device privacy
 
 **Status:** proposed  
-**Depends on:** none (API role endpoint already exists)
+**Depends on:** none (API role endpoint already exists)  
+**Priority:** after `01-settings-hub-menu.md`
 
 ## Goal
 
