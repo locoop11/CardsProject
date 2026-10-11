@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react'
-import { createGame, deleteGame } from './api/client'
-import type { RoleRevealPlayer } from './api/types'
+import { useCallback, useEffect, useState } from 'react'
+import { ApiError, createGame, deleteGame, updateMe } from './api/client'
+import type { RoleRevealPlayer, User } from './api/types'
+import { loadMe } from './auth'
 import {
+  asCardSkinId,
   DEFAULT_CARD_SKIN,
   type CardSkinId,
 } from './cardAssets'
@@ -13,7 +15,10 @@ import {
   type WinResult,
 } from './gameSession'
 import { resolvePlayerNames } from './names'
+import { AccountScreen } from './screens/AccountScreen'
+import { GamesHubScreen } from './screens/GamesHubScreen'
 import { LegislativeScreen } from './screens/LegislativeScreen'
+import { LoginScreen } from './screens/LoginScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
@@ -23,6 +28,9 @@ import { WinScreen } from './screens/WinScreen'
 import './App.css'
 
 type Step =
+  | 'login'
+  | 'gamesHub'
+  | 'account'
   | 'settings'
   | 'roleReveal'
   | 'nomination'
@@ -31,16 +39,21 @@ type Step =
 
 type SettingsPanel = 'hub' | 'names' | 'skin'
 
+/** Frontend-only guest vs account; no guest API user. */
+type PlayMode = 'guest' | 'account'
+
 function emptyNames(count: number): string[] {
   return Array.from({ length: count }, () => '')
 }
 
 export default function App() {
-  const [step, setStep] = useState<Step>('settings')
+  const [step, setStep] = useState<Step>('login')
+  const [playMode, setPlayMode] = useState<PlayMode | null>(null)
   const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>('hub')
   const [playerCount, setPlayerCount] = useState<SupportedPlayerCount>(5)
   const [names, setNames] = useState<string[]>(() => emptyNames(5))
   const [cardSkin, setCardSkin] = useState<CardSkinId>(DEFAULT_CARD_SKIN)
+  const [user, setUser] = useState<User | null>(null)
   const [roleReveal, setRoleReveal] = useState<RoleRevealPlayer[]>([])
   const [session, setSession] = useState<GameSession | null>(null)
   const [chancellorId, setChancellorId] = useState<string | null>(null)
@@ -48,10 +61,108 @@ export default function App() {
   const [win, setWin] = useState<WinResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [skinError, setSkinError] = useState<string | null>(null)
+  const [authStatus, setAuthStatus] = useState<'loading' | 'ready'>('loading')
+  const [authWarning, setAuthWarning] = useState<string | null>(null)
+
+  const applyUser = useCallback((next: User | null) => {
+    setUser(next)
+    if (!next) return
+    const skin = asCardSkinId(next.card_skin)
+    if (skin) setCardSkin(skin)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void loadMe()
+      .then((me) => {
+        if (cancelled) return
+        applyUser(me)
+        setAuthWarning(null)
+        setAuthStatus('ready')
+        if (me) {
+          setPlayMode('account')
+          setStep('gamesHub')
+        } else {
+          setPlayMode(null)
+          setStep('login')
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        setAuthWarning(
+          'Could not reach the account service. You can still play as guest.',
+        )
+        setAuthStatus('ready')
+        setPlayMode(null)
+        setStep('login')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [applyUser])
 
   const handleSessionChange = useCallback((next: GameSession) => {
     setSession(next)
   }, [])
+
+  function goToLogin() {
+    setUser(null)
+    setPlayMode(null)
+    setSettingsPanel('hub')
+    setError(null)
+    setSkinError(null)
+    setAuthWarning(null)
+    setCardSkin(DEFAULT_CARD_SKIN)
+    setStep('login')
+  }
+
+  function enterGuestV1() {
+    setPlayMode('guest')
+    setUser(null)
+    setSettingsPanel('hub')
+    setError(null)
+    setSkinError(null)
+    setCardSkin(DEFAULT_CARD_SKIN)
+    setStep('settings')
+  }
+
+  function enterAccountV1() {
+    setPlayMode('account')
+    setSettingsPanel('hub')
+    setError(null)
+    setSkinError(null)
+    setStep('settings')
+  }
+
+  function leaveV1Settings() {
+    setSettingsPanel('hub')
+    setError(null)
+    setSkinError(null)
+    if (playMode === 'account' && user) {
+      setStep('gamesHub')
+      return
+    }
+    goToLogin()
+  }
+
+  async function handleCardSkinChange(skin: CardSkinId) {
+    setCardSkin(skin)
+    setSkinError(null)
+    if (playMode !== 'account' || !user) return
+    try {
+      const next = await updateMe({ card_skin: skin })
+      setUser(next)
+    } catch (err) {
+      const detail =
+        err instanceof ApiError
+          ? err.message
+          : 'Could not save account card skin'
+      setSkinError(
+        `Table skin updated for this session, but account skin was not saved. ${detail}`,
+      )
+    }
+  }
 
   function handlePlayerCountChange(count: SupportedPlayerCount) {
     setPlayerCount(count)
@@ -98,7 +209,7 @@ export default function App() {
     setStep('nomination')
   }
 
-  async function returnToHub() {
+  async function returnToV1Settings() {
     if (session?.gameId) {
       try {
         await deleteGame(session.gameId)
@@ -116,7 +227,13 @@ export default function App() {
   }
 
   async function playAgain() {
-    await returnToHub()
+    await returnToV1Settings()
+  }
+
+  function handleSelectGame(gameId: string) {
+    if (gameId === 'secret-cards-v1') {
+      enterAccountV1()
+    }
   }
 
   if (step === 'win' && session && win) {
@@ -178,7 +295,7 @@ export default function App() {
       <RoleRevealScreen
         players={roleReveal}
         cardSkin={cardSkin}
-        onBackToHub={() => void returnToHub()}
+        onBackToHub={() => void returnToV1Settings()}
         onComplete={beginGame}
       />
     )
@@ -200,22 +317,70 @@ export default function App() {
     return (
       <SkinScreen
         cardSkin={cardSkin}
-        onCardSkinChange={setCardSkin}
-        onBack={() => setSettingsPanel('hub')}
+        onCardSkinChange={(skin) => void handleCardSkinChange(skin)}
+        onBack={() => {
+          setSkinError(null)
+          setSettingsPanel('hub')
+        }}
+        error={skinError}
+      />
+    )
+  }
+
+  if (step === 'settings') {
+    return (
+      <SettingsHubScreen
+        playerCount={playerCount}
+        cardSkin={cardSkin}
+        onPlayerCountChange={handlePlayerCountChange}
+        onOpenNames={() => setSettingsPanel('names')}
+        onOpenSkin={() => {
+          setSkinError(null)
+          setSettingsPanel('skin')
+        }}
+        onLeaveV1={leaveV1Settings}
+        leaveLabel={
+          playMode === 'account' ? 'Back to games' : 'Back to sign in'
+        }
+        onStartGame={startRoleReveal}
+        busy={busy}
+        error={error}
+      />
+    )
+  }
+
+  if (step === 'account' && user) {
+    return (
+      <AccountScreen
+        user={user}
+        onUserChange={(next) => applyUser(next)}
+        onLoggedOut={goToLogin}
+        onBack={() => setStep('gamesHub')}
+      />
+    )
+  }
+
+  if (step === 'gamesHub' && user && playMode === 'account') {
+    return (
+      <GamesHubScreen
+        displayName={user.display_name}
+        onSelectGame={handleSelectGame}
+        onOpenAccount={() => setStep('account')}
       />
     )
   }
 
   return (
-    <SettingsHubScreen
-      playerCount={playerCount}
-      cardSkin={cardSkin}
-      onPlayerCountChange={handlePlayerCountChange}
-      onOpenNames={() => setSettingsPanel('names')}
-      onOpenSkin={() => setSettingsPanel('skin')}
-      onStartGame={startRoleReveal}
-      busy={busy}
-      error={error}
+    <LoginScreen
+      onAuthenticated={(next) => {
+        applyUser(next)
+        setPlayMode('account')
+        setAuthWarning(null)
+        setStep('gamesHub')
+      }}
+      onPlayAsGuest={enterGuestV1}
+      busyBoot={authStatus === 'loading'}
+      bootWarning={authWarning}
     />
   )
 }

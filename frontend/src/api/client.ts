@@ -4,8 +4,12 @@ import type {
   ActionResponse,
   CreateGameResponse,
   HandResponse,
+  LoginRequest,
   PublicView,
+  RegisterRequest,
   RoleRevealPlayer,
+  UpdateProfileRequest,
+  User,
 } from './types'
 
 export class ApiError extends Error {
@@ -20,6 +24,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
@@ -123,4 +128,33 @@ export function chancellorEnact(
 
 export function deleteGame(gameId: string): Promise<void> {
   return request<void>(`/api/games/${gameId}`, { method: 'DELETE' })
+}
+
+export function register(body: RegisterRequest): Promise<User> {
+  return request<User>('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function login(body: LoginRequest): Promise<User> {
+  return request<User>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function logout(): Promise<void> {
+  return request<void>('/api/auth/logout', { method: 'POST' })
+}
+
+export function getMe(): Promise<User> {
+  return request<User>('/api/auth/me')
+}
+
+export function updateMe(body: UpdateProfileRequest): Promise<User> {
+  return request<User>('/api/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
 }

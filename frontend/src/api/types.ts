@@ -73,3 +73,29 @@ export type HandResponse = {
   viewer_id: string
   cards: LawCardDto[]
 }
+
+export type User = {
+  id: string
+  username: string | null
+  email: string | null
+  display_name: string
+  card_skin: string
+}
+
+export type RegisterRequest = {
+  password: string
+  username?: string
+  email?: string
+  display_name?: string
+}
+
+export type LoginRequest = {
+  password: string
+  username?: string
+  email?: string
+}
+
+export type UpdateProfileRequest = {
+  display_name?: string
+  card_skin?: string
+}

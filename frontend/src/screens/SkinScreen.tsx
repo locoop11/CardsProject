@@ -11,9 +11,15 @@ type Props = {
   cardSkin: CardSkinId
   onCardSkinChange: (skin: CardSkinId) => void
   onBack: () => void
+  error?: string | null
 }
 
-export function SkinScreen({ cardSkin, onCardSkinChange, onBack }: Props) {
+export function SkinScreen({
+  cardSkin,
+  onCardSkinChange,
+  onBack,
+  error = null,
+}: Props) {
   return (
     <main className="screen settings-screen settings-hub">
       <div className="settings-hub-backdrop" aria-hidden="true">
@@ -62,6 +68,12 @@ export function SkinScreen({ cardSkin, onCardSkinChange, onBack }: Props) {
               })}
             </div>
           </section>
+
+          {error && (
+            <p className="warning" role="alert">
+              {error}
+            </p>
+          )}
         </div>
       </div>
 

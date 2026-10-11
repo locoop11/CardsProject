@@ -14,17 +14,22 @@ type HubProps = {
   onPlayerCountChange: (count: SupportedPlayerCount) => void
   onOpenNames: () => void
   onOpenSkin: () => void
+  onLeaveV1: () => void
+  leaveLabel: string
   onStartGame: () => void | Promise<void>
   busy?: boolean
   error?: string | null
 }
 
+/** v1 pass-and-play pre-game hub — not the app entry. */
 export function SettingsHubScreen({
   playerCount,
   cardSkin,
   onPlayerCountChange,
   onOpenNames,
   onOpenSkin,
+  onLeaveV1,
+  leaveLabel,
   onStartGame,
   busy = false,
   error = null,
@@ -41,7 +46,7 @@ export function SettingsHubScreen({
 
       <header className="settings-hub-header">
         <p className="brand">Secret Cards</p>
-        <h1>Game settings</h1>
+        <h1>Pass and play</h1>
       </header>
 
       <div className="settings-hub-options">
@@ -124,6 +129,14 @@ export function SettingsHubScreen({
           onClick={() => void onStartGame()}
         >
           {busy ? 'Starting…' : 'Start game'}
+        </button>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={busy}
+          onClick={onLeaveV1}
+        >
+          {leaveLabel}
         </button>
       </footer>
     </main>

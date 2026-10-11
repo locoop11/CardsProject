@@ -47,6 +47,12 @@ export const CARD_SKIN_LABELS: Record<CardSkinId, string> = {
   party: 'Party',
 }
 
+/** Validate a wire/profile skin id against registered presets. */
+export function asCardSkinId(value: string | null | undefined): CardSkinId | null {
+  if (value === 'default' || value === 'party') return value
+  return null
+}
+
 type SkinMeta = {
   /** Face-down file under this pack (or absolute-under-/cards path). */
   backFile: string
