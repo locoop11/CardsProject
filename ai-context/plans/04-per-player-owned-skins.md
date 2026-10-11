@@ -16,10 +16,12 @@ Product direction: skins become collectible / owned, not only a single table pre
 
 **Likely in scope**
 
-- Account inventory of owned packs.
-- Per-player choice of **Hitler** and **Role** catalog entries (from packs they own).
+- Account inventory via **`UserSkinPacks`** (user ↔ `SkinPack`); API exposes the owned list on the user.
+- Catalog: `SkinPack`, `CardAsset` (bytes via `storage_key`, not DB BLOB), `SkinPackAsset`, optional **`CardAssetGameRule`** (e.g. law art restricted to `secret-cards`).
+- Per-player equip (`UserEquip`) for **Hitler** / **Role** (and law rules when decided) from packs they own.
 - Table still needs a rule for whose art is shown when (e.g. each seat uses that player’s role/Hitler art on reveal/win).
 - Reuse Option A resolve helpers, extended to accept a per-player skin (or per-catalog override) instead of only the table preset.
+- Entity field map: `00-data-entities.md` Part 2.
 
 **Out of scope until decided**
 

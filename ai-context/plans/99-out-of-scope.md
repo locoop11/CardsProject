@@ -21,9 +21,9 @@ This file does not schedule implementation. Items below stay out of the **v1 pas
 |------|----------------------|
 | Player eliminations / presidential powers / investigation powers | `Player.is_alive` exists but unused; no powers in engine |
 | Multi-worker shared game state / durable game rooms as a generic platform | Games still process-local until a future persistence plan beyond `03` rooms |
-| Action-log / stats **persistence** and replay storage | `action_log` is appended in-process; not persisted or exposed on public views |
+| Action-log / stats **persistence** and replay storage | Live `action_log` stays in-process; durable `GameInstance` / `GameAction` shape is catalogued in `00-data-entities.md` but not scheduled until a history plan |
 | Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub is shipped — this row is only about engine rule toggles |
-| Other games built on `cards/` | Package stays game-agnostic; no second game |
+| Shipping a **second playable game product** | Hub + `cards/` stay multi-game-ready (see plans README standing rule); no second domain package until a numbered plan |
 | Cryptographically strong default RNG (`secrets.SystemRandom`) | Enough for local shared-device play; crypto RNG is online hardening — promote separately if needed after multi-device |
 
 ## Promoted out of this table (tracked as plans)

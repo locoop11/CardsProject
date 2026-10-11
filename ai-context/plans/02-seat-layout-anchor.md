@@ -36,8 +36,33 @@ v1 `TableBoard` starts the perimeter walk mid-top (`seatPosition` in `frontend/s
 - [ ] Nominate/vote still target real player ids (never display index as identity).
 - [ ] Pass-and-play gameplay unchanged aside from seat positions.
 
+## Developer starting point
+
+**Suggested order:** (1) Change `seatPosition` start offset to mid-bottom → (2) manual visual check 5 then 6–10 → (3) extract/add `rotatePlayersForViewer` → (4) unit test helper → (5) optionally accept `viewerPlayerId` on `TableBoard` but leave pass-and-play callers unrotated until `03`.
+
+**Do not touch:** `api/**`, `secret_cards/**`, nominate/vote API payloads.
+
+### Files likely to create
+
+| Path | Purpose |
+|------|---------|
+| `frontend/src/seatLayout.ts` | `rotatePlayersForViewer(players, viewerPlayerId)`; keep pure / easy to test |
+| `tests/frontend/…` or colocated test | Only if the repo gains a TS/pytest home for it; otherwise document manual checks. Today frontend automated coverage is thin (`tests/frontend/test_card_skin_catalog.py` is Python catalog check) — prefer a small pure function + manual board check unless you add a vitest later |
+
+### Files likely to modify
+
+| Path | Change |
+|------|--------|
+| `frontend/src/screens/TableBoard.tsx` | `seatPosition`: change `start` from mid-top (`width / 2`) to mid-bottom (after walking top + right sides, or set `start` so index 0 lands on bottom center). Comment update. Optional prop `viewerPlayerId` that rotates `players` **for rendering only**. |
+| Call sites (`NominationScreen`, `LegislativeScreen`, `WinScreen`) | Usually **no change** for pass-and-play; only pass `viewerPlayerId` when `03` lands |
+
+### Direction notes
+
+- Today the function comments say: *“Start mid-top, walk clockwise…”* — invert so index `0` is mid-bottom, still clockwise.
+- Rotation: find viewer index `i`, return `players.slice(i).concat(players.slice(0, i))`.
+- Seat taps must still use `player.id` from the (possibly rotated) objects — ids travel with the objects, so taps stay correct if you rotate the array of player objects, not bare indices.
+
 ## Notes for implementers
 
-- Current start: mid-top — see `seatPosition` comment “Start mid-top…” in `TableBoard.tsx`.
-- Unit-test the rotation helper; manual check odd/even counts.
+- Primary bug/feature locus: `seatPosition` in `TableBoard.tsx` (~lines 46–98).
 - Do not send rotated order to the API.

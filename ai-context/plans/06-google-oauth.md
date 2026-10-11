@@ -34,5 +34,7 @@ Convenience and fewer passwords for internet play. Explicitly deferred so v2 can
 
 ## Notes for implementers
 
-- Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, redirect URIs for local + production.
-- Do not start until `01` is shipped; prefer after Option A (`03`) so identity binding is already proven with local accounts.
+- Depends on shipped `01` cookie sessions and user ids.
+- Prefer after `03` so seat-binding identity is already proven with local accounts.
+- Likely touch: `api/auth/routes.py` (add Google), `api/db.py` (nullable `google_sub`), frontend Account UI “Continue with Google”; env `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+- Full file map can be expanded when this plan is promoted to `ready`.

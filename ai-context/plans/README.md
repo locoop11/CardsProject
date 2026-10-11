@@ -94,9 +94,12 @@ Pointers into living ai-context / code.
 
 **v1 pass-and-play** is complete for product scope. Open plans below are **v2 / v3** work.
 
+Ready plans (`01`–`03`) include a **Developer starting point**: suggested order, files to create/modify, and what not to touch.
+
 | File | Concern | Status |
 |------|---------|--------|
-| `01-accounts-auth.md` | Accounts, cookies, username/email + password, display name, account table skin | ready — v2 phase 1 |
+| `00-data-entities.md` | **Reference:** what we store, tiers A–D, field-level entities | locked catalog (not a build ticket) |
+| `01-accounts-auth.md` | Login-first UI, guest→v1 only, Games hub (v1/v2…), accounts API | ready — v2 phase 1 |
 | `02-seat-layout-anchor.md` | Bottom-center seat geometry + viewer rotation helper | ready — v2 phase 2 |
 | `03-multi-device-privacy.md` | Option A privacy, rooms/join, authz, multi-device play | ready — v2 phase 3 |
 | `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs | proposed — deferred |
@@ -105,6 +108,44 @@ Pointers into living ai-context / code.
 | `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
 
 **Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive. Privacy = `03` only; seat layout = `02-seat-layout-anchor.md`.
+
+**Execute order:** `01` → `02` → `03`. Do not start `03` until `01` local auth works **and** auth layering acceptance criteria in `01` pass.
+
+## Standing structure rule (platform, games, persistence)
+
+Locked direction for v2+: **Option A — pragmatic N-layered API**, communication over **HTTP + JSON**. Durable resources use **CRUD-shaped** endpoints (create/read/update/delete or clear equivalents). Gameplay actions stay **command-shaped** HTTP (`POST …/nominate`, `…/vote`, etc.) — not forced into fake CRUD.
+
+### Layers (every durable feature)
+
+```
+HTTP (routes, deps, Pydantic)  →  service (rules)  →  repository (SQL)  →  db (connect/schema)
+```
+
+- **Do not** put SQL in routes or services. **Do not** put HTTP/cookies in repositories.
+- **Do not** introduce an ORM unless a future plan explicitly adopts one.
+- Full Clean Architecture / ports-and-adapters / DDD aggregates are **out of scope** unless a dedicated plan justifies them.
+
+### Platform vs game packages (multi-game ready)
+
+This repo will host **more than one game**. Organize so shared shell and per-game logic do not merge:
+
+| Kind | Lives in | Examples |
+|------|----------|----------|
+| **Platform (shared)** | `api/auth/`, `api/db.py`, accounts, future shared lobby helpers; frontend shell (`Login`, `GamesHub`, account) | Identity, session cookies, hub catalog |
+| **Game domain** | One Python package per game (today: `secret_cards/`) | Rules, phases, wins — never in FastAPI routes |
+| **Generic card primitives** | `cards/` only | Piles/tables; **no** game rules; reusable by every game |
+| **Game HTTP** | Dedicated router module per game (today: `api/routes.py` for Secret Cards) | Thin: validate → call engine → map errors → JSON |
+| **Game UI** | Screens/session helpers scoped to that game; hub only lists entries | Secret Cards flow stays out of unrelated games |
+
+**Rules**
+
+1. **New game = new domain package + its own HTTP router + its own UI flow** — do not stuff foreign rules into `secret_cards/`.
+2. **Hub is data-driven** (`gameCatalog` / equivalent): add a catalog entry; do not rewrite the app shell per game.
+3. **Auth and accounts are platform** — all games reuse the same session; guests remain a frontend mode unless a later plan changes that.
+4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer `/api/<game-slug>/…` so namespaces stay clear. Do not globally rename in `01`.
+5. Ephemeral play state may stay in-memory (`api/session.py` or per-game store) until a plan requires durable rooms/DB.
+
+See `01-accounts-auth.md` → **Auth layering** for the auth module map. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
 
 ## Current bug plans
 
