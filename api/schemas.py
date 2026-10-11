@@ -92,3 +92,32 @@ class ActionResponse(BaseModel):
 class HandResponse(BaseModel):
     viewer_id: str
     cards: list[CardOut]
+
+
+# --- Auth (accounts) ---
+
+
+class RegisterRequest(BaseModel):
+    password: str
+    username: Optional[str] = None
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    password: str
+    username: Optional[str] = None
+    email: Optional[str] = None
+
+
+class UpdateProfileRequest(BaseModel):
+    display_name: Optional[str] = None
+    card_skin: Optional[str] = None
+
+
+class UserOut(BaseModel):
+    id: str
+    username: Optional[str] = None
+    email: Optional[str] = None
+    display_name: str
+    card_skin: str

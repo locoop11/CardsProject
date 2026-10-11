@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.app import app
+from api.db import init_db
 from api.session import store
 
-client = TestClient(app)
 
-
-def setup_function() -> None:
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    """Isolated SQLite DB per test so game tests never touch data/secret_cards.db."""
+    db_file = tmp_path / "game_api_test.db"
+    monkeypatch.setenv("SECRET_CARDS_DB", str(db_file))
+    init_db()
     store._games.clear()
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-def _create(seed: int = 1) -> dict:
+def _create(client: TestClient, seed: int = 1) -> dict:
     res = client.post(
         "/api/games",
         json={
@@ -27,12 +34,14 @@ def _create(seed: int = 1) -> dict:
     return res.json()
 
 
-def test_health() -> None:
+def test_health(client: TestClient) -> None:
     assert client.get("/health").json() == {"status": "ok"}
 
 
-def test_create_game_returns_public_view_without_roles_on_players() -> None:
-    data = _create()
+def test_create_game_returns_public_view_without_roles_on_players(
+    client: TestClient,
+) -> None:
+    data = _create(client)
     assert "game_id" in data
     for p in data["view"]["players"]:
         assert set(p.keys()) == {"id", "name"}
@@ -41,7 +50,9 @@ def test_create_game_returns_public_view_without_roles_on_players() -> None:
     assert data["view"]["reds_on_table"] == 0
 
 
-def test_role_reveal_follows_name_entry_order_not_seat_shuffle() -> None:
+def test_role_reveal_follows_name_entry_order_not_seat_shuffle(
+    client: TestClient,
+) -> None:
     """Pass-and-play reveal must match typed seats even when seats shuffle."""
     names = ["Ada", "Bo", "Cy", "Di", "Ed"]
     res = client.post(
@@ -56,8 +67,8 @@ def test_role_reveal_follows_name_entry_order_not_seat_shuffle() -> None:
     assert sorted(seat_names) == sorted(names)
 
 
-def test_player_role_endpoint_scoped() -> None:
-    data = _create()
+def test_player_role_endpoint_scoped(client: TestClient) -> None:
+    data = _create(client)
     gid = data["game_id"]
     pid = data["role_reveal"][0]["id"]
     expected = data["role_reveal"][0]
@@ -66,8 +77,8 @@ def test_player_role_endpoint_scoped() -> None:
     assert res.json() == expected
 
 
-def test_hand_forbidden_for_wrong_viewer() -> None:
-    data = _create(seed=7)
+def test_hand_forbidden_for_wrong_viewer(client: TestClient) -> None:
+    data = _create(client, seed=7)
     gid = data["game_id"]
     view = data["view"]
     president_id = view["president_id"]
@@ -101,8 +112,8 @@ def test_hand_forbidden_for_wrong_viewer() -> None:
     assert len(ok.json()["cards"]) == 3
 
 
-def test_legislative_pipeline_enacts_real_deck_card() -> None:
-    data = _create(seed=99)
+def test_legislative_pipeline_enacts_real_deck_card(client: TestClient) -> None:
+    data = _create(client, seed=99)
     gid = data["game_id"]
     view = data["view"]
     nominee = view["eligible_chancellor_ids"][0]
