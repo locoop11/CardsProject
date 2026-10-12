@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, createGame, deleteGame, updateMe } from './api/client'
-import type { RoleRevealPlayer, User } from './api/types'
+import type { PublicView, RoleRevealPlayer, User } from './api/types'
 import { loadMe } from './auth'
 import {
   asCardSkinId,
@@ -15,12 +15,19 @@ import {
   type WinResult,
 } from './gameSession'
 import { resolvePlayerNames } from './names'
+import {
+  fetchOwnRole,
+  playerIdsFromView,
+  resolveSelfPlayerId,
+  type OnlinePlay,
+} from './onlineSession'
 import { AccountScreen } from './screens/AccountScreen'
 import { GamesHubScreen } from './screens/GamesHubScreen'
 import { LegislativeScreen } from './screens/LegislativeScreen'
 import { LoginScreen } from './screens/LoginScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
+import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
 import { SettingsHubScreen } from './screens/SettingsScreen'
 import { SkinScreen } from './screens/SkinScreen'
@@ -31,6 +38,7 @@ type Step =
   | 'login'
   | 'gamesHub'
   | 'account'
+  | 'onlineLobby'
   | 'settings'
   | 'roleReveal'
   | 'nomination'
@@ -64,6 +72,8 @@ export default function App() {
   const [skinError, setSkinError] = useState<string | null>(null)
   const [authStatus, setAuthStatus] = useState<'loading' | 'ready'>('loading')
   const [authWarning, setAuthWarning] = useState<string | null>(null)
+  /** Set for multi-device v2; null for local pass-and-play. */
+  const [onlinePlay, setOnlinePlay] = useState<OnlinePlay | null>(null)
 
   const applyUser = useCallback((next: User | null) => {
     setUser(next)
@@ -233,7 +243,63 @@ export default function App() {
   function handleSelectGame(gameId: string) {
     if (gameId === 'secret-cards-v1') {
       enterAccountV1()
+      return
     }
+    if (gameId === 'secret-cards-v2') {
+      if (!user || playMode !== 'account') return
+      setError(null)
+      setOnlinePlay(null)
+      setStep('onlineLobby')
+    }
+  }
+
+  async function enterOnlineGame(payload: {
+    roomId: string
+    gameId: string
+    view: PublicView
+  }) {
+    setBusy(true)
+    setError(null)
+    try {
+      const selfPlayerId = await resolveSelfPlayerId(
+        payload.gameId,
+        playerIdsFromView(payload.view),
+      )
+      const own = await fetchOwnRole(payload.gameId, selfPlayerId)
+      const rolesById = new Map([
+        [own.id, { role: own.role, team: own.team }],
+      ])
+      setOnlinePlay({
+        gameId: payload.gameId,
+        selfPlayerId,
+        roomId: payload.roomId,
+      })
+      setRoleReveal([own])
+      setSession(sessionFromView(payload.view, rolesById))
+      setStep('roleReveal')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to enter online game')
+      setStep('onlineLobby')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function leaveOnlineToHub() {
+    if (session?.gameId) {
+      try {
+        await deleteGame(session.gameId)
+      } catch {
+        /* may already be gone */
+      }
+    }
+    setOnlinePlay(null)
+    setRoleReveal([])
+    setSession(null)
+    setChancellorId(null)
+    setWin(null)
+    setError(null)
+    setStep('gamesHub')
   }
 
   if (step === 'win' && session && win) {
@@ -242,7 +308,10 @@ export default function App() {
         session={session}
         win={win}
         cardSkin={cardSkin}
-        onPlayAgain={() => void playAgain()}
+        viewerPlayerId={onlinePlay?.selfPlayerId}
+        onPlayAgain={() =>
+          void (onlinePlay ? leaveOnlineToHub() : playAgain())
+        }
       />
     )
   }
@@ -254,6 +323,7 @@ export default function App() {
         session={session}
         chancellorId={chancellorId}
         cardSkin={cardSkin}
+        selfPlayerId={onlinePlay?.selfPlayerId}
         onSessionChange={handleSessionChange}
         onRoundComplete={() => {
           setChancellorId(null)
@@ -273,6 +343,7 @@ export default function App() {
         key={`nom-${session.roundNumber}-${session.presidentIndex}`}
         session={session}
         cardSkin={cardSkin}
+        selfPlayerId={onlinePlay?.selfPlayerId}
         onSessionChange={handleSessionChange}
         onGovernmentApproved={(id, nextView) => {
           setSession((prev) =>
@@ -295,8 +366,24 @@ export default function App() {
       <RoleRevealScreen
         players={roleReveal}
         cardSkin={cardSkin}
-        onBackToHub={() => void returnToV1Settings()}
+        onBackToHub={() =>
+          void (onlinePlay ? leaveOnlineToHub() : returnToV1Settings())
+        }
         onComplete={beginGame}
+      />
+    )
+  }
+
+  if (step === 'onlineLobby' && user && playMode === 'account') {
+    return (
+      <OnlineLobbyScreen
+        user={user}
+        onBack={() => {
+          setError(null)
+          setOnlinePlay(null)
+          setStep('gamesHub')
+        }}
+        onGameStarted={(payload) => void enterOnlineGame(payload)}
       />
     )
   }

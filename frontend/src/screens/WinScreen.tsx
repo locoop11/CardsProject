@@ -14,6 +14,8 @@ type Props = {
   session: GameSession
   win: WinResult
   cardSkin?: CardSkinId
+  /** Online: rotate board so this seat is bottom-center. */
+  viewerPlayerId?: string | null
   onPlayAgain: () => void
 }
 
@@ -35,6 +37,7 @@ export function WinScreen({
   session,
   win,
   cardSkin = DEFAULT_CARD_SKIN,
+  viewerPlayerId = null,
   onPlayAgain,
 }: Props) {
   const [showPlayAgain, setShowPlayAgain] = useState(false)
@@ -69,6 +72,7 @@ export function WinScreen({
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
         cardSkin={cardSkin}
+        viewerPlayerId={viewerPlayerId}
         revealRoles
         winSummary={{ winner: win.winner, message: winMessage(win) }}
       />

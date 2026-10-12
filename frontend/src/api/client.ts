@@ -8,6 +8,8 @@ import type {
   PublicView,
   RegisterRequest,
   RoleRevealPlayer,
+  Room,
+  StartRoomResponse,
   UpdateProfileRequest,
   User,
 } from './types'
@@ -156,5 +158,40 @@ export function updateMe(body: UpdateProfileRequest): Promise<User> {
   return request<User>('/api/auth/me', {
     method: 'PATCH',
     body: JSON.stringify(body),
+  })
+}
+
+export function createRoom(playerCount: number): Promise<Room> {
+  return request<Room>('/api/rooms', {
+    method: 'POST',
+    body: JSON.stringify({ player_count: playerCount }),
+  })
+}
+
+export function joinRoom(code: string): Promise<Room> {
+  return request<Room>('/api/rooms/join', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
+}
+
+export function getRoom(roomId: string): Promise<Room> {
+  return request<Room>(`/api/rooms/${roomId}`)
+}
+
+export function claimSeat(roomId: string, seatIndex: number): Promise<Room> {
+  return request<Room>(`/api/rooms/${roomId}/claim`, {
+    method: 'POST',
+    body: JSON.stringify({ seat_index: seatIndex }),
+  })
+}
+
+export function startRoom(
+  roomId: string,
+  seed?: number,
+): Promise<StartRoomResponse> {
+  return request<StartRoomResponse>(`/api/rooms/${roomId}/start`, {
+    method: 'POST',
+    body: JSON.stringify(seed === undefined ? {} : { seed }),
   })
 }

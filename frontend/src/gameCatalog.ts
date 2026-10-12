@@ -17,7 +17,7 @@ export const GAME_CATALOG: readonly GameCatalogEntry[] = [
   {
     id: 'secret-cards-v2',
     title: 'Secret Cards v2',
-    description: 'Multi-device rooms — coming soon.',
-    available: false,
+    description: 'Multi-device rooms — host or join with a code.',
+    available: true,
   },
 ]

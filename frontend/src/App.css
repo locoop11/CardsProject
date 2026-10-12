@@ -472,6 +472,26 @@ body {
   color: var(--accent);
 }
 
+.online-seat-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hub-row.is-selected {
+  border-color: var(--ring);
+  background: #f3f7fb;
+}
+
+.hub-row.is-disabled,
+.hub-row:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .account-mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   chancellorEnact,
+  getGame,
   getHand,
   presidentDiscard,
 } from '../api/client'
@@ -23,6 +24,7 @@ import { TableBoard } from './TableBoard'
 
 type Phase =
   | 'loading'
+  | 'waiting'
   | 'presidentSelect'
   | 'presidentFaceDown'
   | 'passChancellor'
@@ -33,19 +35,25 @@ type Props = {
   session: GameSession
   chancellorId: string
   cardSkin?: CardSkinId
+  /** Multi-device: only the office holder acts; others wait. */
+  selfPlayerId?: string | null
   onSessionChange: (session: GameSession) => void
   onRoundComplete: () => void
   onWin: (win: WinResult) => void
 }
 
+const ONLINE_POLL_MS = 1500
+
 export function LegislativeScreen({
   session,
   chancellorId,
   cardSkin = DEFAULT_CARD_SKIN,
+  selfPlayerId = null,
   onSessionChange,
   onRoundComplete,
   onWin,
 }: Props) {
+  const online = Boolean(selfPlayerId)
   const [phase, setPhase] = useState<Phase>('loading')
   const [hand, setHand] = useState<LawCardDto[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -59,8 +67,14 @@ export function LegislativeScreen({
 
   const prez = president(session)
   const chancellor = playerById(session, chancellorId)
+  const isSelfPresident = online && selfPlayerId === handViewerId
+  const isSelfChancellor = online && selfPlayerId === chancellorId
 
   useEffect(() => {
+    if (online && !isSelfPresident) {
+      setPhase('waiting')
+      return
+    }
     let cancelled = false
     void (async () => {
       try {
@@ -76,7 +90,42 @@ export function LegislativeScreen({
     return () => {
       cancelled = true
     }
-  }, [session.gameId, handViewerId])
+  }, [session.gameId, handViewerId, online, isSelfPresident])
+
+  // Online: waiters poll; chancellor loads hand when phase advances.
+  useEffect(() => {
+    if (!online || phase !== 'waiting') return
+    const id = window.setInterval(() => {
+      void (async () => {
+        try {
+          const view = await getGame(session.gameId)
+          onSessionChange(mergeView(session, view))
+          if (view.phase === 'nomination' || view.phase === 'game_over') {
+            const win = winFromView(view)
+            if (win) {
+              onWin(win)
+              return
+            }
+            onRoundComplete()
+            return
+          }
+          if (
+            view.phase === 'legislative_chancellor' &&
+            isSelfChancellor
+          ) {
+            const res = await getHand(session.gameId, chancellorId)
+            setHand(res.cards)
+            setCardsFaceDown(false)
+            setPhase('chancellorSelect')
+          }
+        } catch {
+          /* keep polling */
+        }
+      })()
+    }, ONLINE_POLL_MS)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, isSelfChancellor, phase, session.gameId, chancellorId])
 
   async function confirmPresidentDiscard() {
     if (pendingDiscardId === null || hand.length !== 3 || busy) return
@@ -88,8 +137,14 @@ export function LegislativeScreen({
       setHand(action.hand ?? hand.filter((c) => c.id !== pendingDiscardId))
       setSelectedId(null)
       setPendingDiscardId(null)
-      setCardsFaceDown(true)
-      setPhase('presidentFaceDown')
+      if (online) {
+        // Chancellor device picks up via poll; president waits.
+        setHand([])
+        setPhase('waiting')
+      } else {
+        setCardsFaceDown(true)
+        setPhase('presidentFaceDown')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Discard failed')
     } finally {
@@ -146,6 +201,7 @@ export function LegislativeScreen({
         lawsOnTable={session.lawsOnTable}
         roundNumber={session.roundNumber}
         cardSkin={cardSkin}
+        viewerPlayerId={selfPlayerId}
       />
 
       {error && (
@@ -270,6 +326,20 @@ export function LegislativeScreen({
         <div className="table-overlay" role="status">
           <div className="table-overlay-panel">
             <p className="table-overlay-title">Drawing LawCards…</p>
+          </div>
+        </div>
+      )}
+
+      {phase === 'waiting' && online && (
+        <div className="table-overlay" role="status">
+          <div className="table-overlay-panel">
+            <p className="table-overlay-title">
+              {isSelfPresident
+                ? 'Waiting for chancellor…'
+                : isSelfChancellor
+                  ? 'Waiting for president to discard…'
+                  : 'Legislative in progress…'}
+            </p>
           </div>
         </div>
       )}

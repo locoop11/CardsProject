@@ -99,3 +99,25 @@ export type UpdateProfileRequest = {
   display_name?: string
   card_skin?: string
 }
+
+/** Multi-device lobby (ephemeral rooms). */
+export type RoomSeat = {
+  seat_index: number
+  player_id: string
+  user_id: string | null
+  display_name: string | null
+}
+
+export type Room = {
+  room_id: string
+  join_code: string
+  host_user_id: string
+  player_count: number
+  game_id: string | null
+  seats: RoomSeat[]
+}
+
+export type StartRoomResponse = {
+  game_id: string
+  view: PublicView
+}
