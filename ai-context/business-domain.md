@@ -2,9 +2,15 @@
 
 ## Product
 
-**Secret Cards** is a tabletop-style social deduction game for 5–10 players, played on one shared device (pass-and-play). Players have hidden roles on two teams and enact laws until a win condition is met.
+**Secret Cards** is a tabletop-style social deduction game for 5–10 players. **v1** is played on one shared device (pass-and-play). Players have hidden roles on two teams and enact laws until a win condition is met.
 
-This is **not** a networked multiplayer product in v1.
+The product shell is **login-first**:
+
+- Signed-in players use a **Games hub** to choose what to play.
+- Casual players may choose **Play as guest** and get **v1 only**.
+- Guests are not stored as users. There is no silent anonymous entry into gameplay.
+
+Online multi-device rooms (v2) are not available yet; the hub may list them as coming soon.
 
 ---
 
@@ -12,6 +18,9 @@ This is **not** a networked multiplayer product in v1.
 
 | Term | Meaning |
 |------|---------|
+| **Account** | Durable player identity with display name and preferred card skin |
+| **Guest** | Explicit no-account play mode; v1 pass-and-play only |
+| **Games hub** | Signed-in landing place listing available games/modes |
 | **Team** | `communist` or `fascist` — the side that can win |
 | **Role** | `communist`, `fascist`, or `hitler` (Hitler is on the fascist team) |
 | **President** | Rotating office; nominates chancellor each round |
@@ -23,6 +32,17 @@ This is **not** a networked multiplayer product in v1.
 | **Legislative** | Elected government draws laws; president discards one; chancellor enacts one |
 | **Top enact / auto-enact** | If no eligible nominee remains, the top deck law is enacted immediately |
 | **Term limit** | Previous chancellor (default) cannot be renominated next round; previous president bar is off by default |
+| **Card skin** | Whole-table art pack for the shared device (`default` or `party`) |
+
+---
+
+## Access rules (product)
+
+| Actor | May do |
+|-------|--------|
+| Unauthenticated visitor | See Login; register; sign in; choose Play as guest |
+| Guest | Play Secret Cards v1 only; leave → Login |
+| Signed-in account | Games hub; Account (display name, logout); play v1 with saved card skin |
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** proposed  
-**Depends on:** `01-accounts-auth`, `02-seat-layout-anchor`, `03-multi-device-privacy`  
+**Depends on:** accounts auth (**shipped**), `02-seat-layout-anchor`, `03-multi-device-privacy`  
 **Priority:** lowest — remember only; do not implement until human promotes
 
 ## Goal

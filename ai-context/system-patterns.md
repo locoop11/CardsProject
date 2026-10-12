@@ -2,9 +2,21 @@
 
 ## Layer separation
 
-- **`cards` ← `secret_cards` ← `api` ← `frontend`**. Never reverse.
+- **`cards` ← `secret_cards` ← `api` ← `frontend`**. Never reverse for the game stack.
 - Generic card code has zero game knowledge; enforced by AST import test.
-- HTTP layer is transport only: validate request shapes, call engine, map errors to status codes, serialize views.
+- HTTP game layer is transport only: validate request shapes, call engine, map errors to status codes, serialize views.
+- **Platform auth** is separate from game domain: `api/auth/` + `api/db.py` never belong in `secret_cards/`.
+
+## Auth persistence layering
+
+```
+routes / deps  →  service (+ passwords)  →  repository  →  db
+```
+
+- Routes/deps own cookies, status codes, Pydantic DTOs.
+- Service owns register/login/profile rules, normalization, TTL, skin allow-list — **no SQL**.
+- Repository owns SQL and row mapping — **no FastAPI / cookies**.
+- `db.py` owns connect, schema DDL, path/env, shared skin constants — **no use-cases**.
 
 ## Engine pattern
 
@@ -22,18 +34,22 @@
 
 ## API pattern
 
-- Pydantic models in `api/schemas.py` define the wire contract.
-- Mutating routes return `ActionResponse` (`view` + optional extras).
+- Pydantic models in `api/schemas.py` define the wire contract (game + auth).
+- Mutating game routes return `ActionResponse` (`view` + optional extras).
 - `EngineError` → HTTP 400 with `detail=str(exc)`.
-- Sessions: UUID hex truncated to 12 chars in process memory.
+- Auth domain errors → `400` / `401` / `409` as contracted.
+- Game sessions: UUID hex truncated to 12 chars in process memory.
+- Auth sessions: SQLite row id = cookie `session_id`; game routes stay cookie-optional.
 
 ## Frontend patterns
 
-- **Step machine in `App`**, not a router — matches linear pass-and-play flow.
+- **Step machine in `App`**, not a router — login-first shell then linear v1 pass-and-play.
+- **Guest vs account** is local `playMode` only; no guest API user.
+- **Games hub** is data-driven (`gameCatalog.ts`); do not hardcode shell rewrites per new game.
 - **Settings panels** (`hub` \| `names` \| `skin`) nest under the `settings` step; gameplay steps stay flat.
-- **Whole-table `cardSkin`** held in `App` and passed as props; not part of `PublicView`.
+- **Whole-table `cardSkin`** held in `App` and passed as props; not part of `PublicView`. Accounts persist via `PATCH /api/auth/me`.
 - **Card art resolve helpers only** (`resolveHitler` / `resolveRole` / `resolveLaw` / `cardBackSrc`) — screens must not branch on pack file layout.
-- **Screen-local sub-phases** for nomination voting and legislative handoffs.
+- **All `fetch` uses `credentials: 'include'`** for cookie auth.
 - **`mergeView`** after every successful action so roles/per-seat skins survive public-view updates.
 - Confirm overlays before irreversible votes / discards / enacts.
 - Device-pass UX: face-down cards and timed voting windows (`SECONDS_PER_VOTER`).
@@ -50,7 +66,8 @@
 |------|----------|--------|
 | Card primitives | `tests/cards/` | Unit + boundary import guard |
 | Engine rules | `tests/secret_cards/` | Unit per phase + `test_full_game_simulations.py` |
-| HTTP | `tests/api/test_api.py` | FastAPI client against live routes |
+| Game HTTP | `tests/api/test_api.py` | FastAPI client; no auth cookie required |
+| Auth HTTP | `tests/api/test_auth.py` | Cookie sessions, profile, guest game path |
 | Frontend | oxlint via `npm run lint`; no automated UI test suite in-repo yet |
 
-Prefer seeded `Random` for deck/role order in engine tests.
+Prefer seeded `Random` for deck/role order in engine tests. Auth tests use isolated DB via `SECRET_CARDS_DB` where configured by fixtures.

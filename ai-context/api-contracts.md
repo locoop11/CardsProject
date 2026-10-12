@@ -2,7 +2,26 @@
 
 Base: `http://127.0.0.1:8000`. In Vite dev, call `/api/...` and `/health` on the frontend origin (proxied).
 
-**Rule:** responses never include raw `GameState`. Public board views omit roles, deck order, and hands. Legislative hands require an authorized `viewer_id`.
+**Rules**
+
+- Game responses never include raw `GameState`. Public board views omit roles, deck order, and hands. Legislative hands require an authorized `viewer_id`.
+- Auth uses HttpOnly cookie `session_id`. Auth profile responses never include `password_hash`.
+- **`/api/games*` are cookie-optional** (guest play and game tests need no session).
+
+---
+
+## Auth session cookie
+
+| Property | Value |
+|----------|--------|
+| Name | `session_id` |
+| Flags | HttpOnly; SameSite=lax; `Secure` only when request scheme is https |
+| Path | `/` |
+| Max-Age | 30 days (`SESSION_TTL`) |
+| Set on | Successful `register` / `login` |
+| Cleared on | `logout` |
+
+Frontend must send cookies (`credentials: 'include'`). CORS allows Vite origins with credentials.
 
 ---
 
@@ -14,9 +33,77 @@ Base: `http://127.0.0.1:8000`. In Vite dev, call `/api/...` and `/health` on the
 
 ---
 
+### `POST /api/auth/register`
+
+Create account + session.
+
+**Body**
+
+| Field | Type | Rules |
+|-------|------|--------|
+| `password` | string | Required; min length **6** |
+| `username` | string \| omit | At least one of `username` / `email` required |
+| `email` | string \| omit | At least one of `username` / `email` required |
+| `display_name` | string \| omit | Defaults from username, else email local-part, else `"Player"` |
+
+Identity normalization: username → strip + casefold; email → strip + lower.
+
+**Response `201` — `UserOut`** + `Set-Cookie: session_id=…`
+
+**Errors:** `400` invalid input; `409` duplicate username or email.
+
+---
+
+### `POST /api/auth/login`
+
+**Body:** `{ "password", "username"?, "email"? }` — at least one of username/email.
+
+**Response `200` — `UserOut`** + session cookie.
+
+**Errors:** `401` with detail `"Invalid credentials"` (generic; no user enumeration).
+
+---
+
+### `POST /api/auth/logout`
+
+Requires valid session cookie.
+
+**Response `204`** + clear cookie. Session row deleted when present.
+
+**Errors:** `401` if not authenticated.
+
+---
+
+### `GET /api/auth/me`
+
+Requires valid session cookie.
+
+**Response `200` — `UserOut`**
+
+**Errors:** `401` if missing/expired/invalid session.
+
+---
+
+### `PATCH /api/auth/me`
+
+Requires valid session cookie.
+
+**Body:** `{ "display_name"?, "card_skin"? }` — at least one field required.
+
+| Field | Rules |
+|-------|--------|
+| `display_name` | Non-empty after strip |
+| `card_skin` | `"default"` \| `"party"` |
+
+**Response `200` — `UserOut`**
+
+**Errors:** `400` bad input; `401` not authenticated.
+
+---
+
 ### `POST /api/games`
 
-Start a game (`start_game`).
+Start a game (`start_game`). Auth not required.
 
 **Body**
 
@@ -124,13 +211,21 @@ No body. Missing votes filled as Nein. Strict Ja majority required to approve.
 
 ### `DELETE /api/games/{game_id}`
 
-Drop in-memory session.
+Drop in-memory game session.
 
 **Response:** `204` No Content (always succeeds even if already gone from store’s perspective — store simply pops).
 
 ---
 
 ## Shared types
+
+### `UserOut`
+
+```json
+{ "id": "…", "username": "ada", "email": null, "display_name": "Ada", "card_skin": "default" }
+```
+
+`card_skin`: `"default"` \| `"party"`. Username/email may be null.
 
 ### `CardOut` / LawCard
 
@@ -191,6 +286,8 @@ Optional fields omitted / null when not applicable.
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Engine rule violation (`InvalidPhaseError`, etc.) or bad request body |
+| `400` | Engine rule violation, bad auth/profile body, or bad game request |
+| `401` | Missing/invalid session or failed login |
 | `403` | Hand access forbidden for `viewer_id` |
 | `404` | Unknown game or player |
+| `409` | Duplicate username or email on register |

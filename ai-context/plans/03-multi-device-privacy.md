@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** ready  
-**Depends on:** `01-accounts-auth` (required — username/email + password sessions); `02-seat-layout-anchor` (UI reuse for “me” at bottom)  
+**Depends on:** accounts auth (**shipped** — cookie sessions); `02-seat-layout-anchor` (UI reuse for “me” at bottom)  
 **Priority:** v2 phase 3
 
 ## Goal

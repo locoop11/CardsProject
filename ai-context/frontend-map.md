@@ -4,16 +4,19 @@
 
 `App.tsx` owns top-level **step** state (not React Router):
 
-`settings` → `roleReveal` → `nomination` ↔ `legislative` → `win`
+`login` → (`gamesHub` | `account` when signed in) → `settings` → `roleReveal` → `nomination` ↔ `legislative` → `win`
 
-Within `settings`, a **panel** sub-state selects hub UI:
+Boot: `loadMe()` → if session, `playMode=account` and step `gamesHub`; else step `login`. If `/me` fails for non-401 reasons, stay on login with a warning; guest play remains available.
+
+**Play mode** (`guest` | `account`) is frontend-only. Guests have no API user and cannot open the Games hub.
+
+Within `settings`, a **panel** sub-state selects v1 hub UI:
 
 `hub` | `names` | `skin`
 
-- **Hub** (`SettingsHubScreen`): player count, links to Names / Card set skin, **Start game** (creates the API session).
-- **Names** / **Skin**: nested panels; Back returns to hub (does not leave `settings` step).
-
-Creates the game from the hub (`POST /api/games`), holds `GameSession` + `roleReveal` + whole-table `cardSkin`, and deletes the session on play-again / return-to-hub.
+- **Hub** (`SettingsHubScreen`): player count, Names / Card set skin, **Start game**.
+- Leaving v1 settings: account → Games hub; guest → Login.
+- Whole-table `cardSkin`: for accounts, seeded from `user.card_skin` and PATCH’d on change; for guests, client-only (default pack).
 
 ---
 
@@ -21,13 +24,16 @@ Creates the game from the hub (`POST /api/games`), holds `GameSession` + `roleRe
 
 | Screen | Responsibility |
 |--------|----------------|
-| `SettingsHubScreen` (`SettingsScreen.tsx`) | Pre-game hub: player count, open Names/Skin, start game |
-| `NamesScreen` | Enter names; blanks → `Player N`; back to hub (start is on hub) |
-| `SkinScreen` | Pick whole-table card pack (`default` \| `party`); preview catalogs |
+| `LoginScreen` | First page: login / register + **Play as guest** |
+| `GamesHubScreen` | Signed-in only: data-driven catalog, open Account |
+| `AccountScreen` | Display name PATCH, logout → login |
+| `SettingsHubScreen` (`SettingsScreen.tsx`) | v1 pre-game hub: player count, Names/Skin, start game |
+| `NamesScreen` | Enter names; blanks → `Player N`; back to hub |
+| `SkinScreen` | Pick whole-table pack (`default` \| `party`); preview catalogs |
 | `RoleRevealScreen` | Pass-and-play private role cards in **entry order**; uses `cardSkin` |
 | `NominationScreen` | Nominate → timed Ja/Nein → resolve; top-enact / Hitler win; `cardSkin` |
 | `LegislativeScreen` | President hand / discard / pass / chancellor enact; `cardSkin` |
-| `WinScreen` | Winner / roles; play again → hub |
+| `WinScreen` | Winner / roles; play again → v1 settings hub |
 | `TableBoard` | Shared board: seats, president, enacted laws, counts, vote UI |
 | `LawCardView` | One law card face via `resolveLaw` |
 | `PlayingCardFace` | Face / back art via resolve helpers |
@@ -39,11 +45,12 @@ Creates the game from the hub (`POST /api/games`), holds `GameSession` + `roleRe
 
 ### Global (in `App`)
 
-- `playerCount`, `names`, `cardSkin` (whole-table preset), `settingsPanel`
-- `roleReveal`, `session`, `chancellorId`, `win`, `busy`, `error`
+- `playMode`, `user`, `authStatus`, `authWarning`
+- `playerCount`, `names`, `cardSkin`, `settingsPanel`
+- `roleReveal`, `session`, `chancellorId`, `win`, `busy`, `error`, `skinError`
 - `legislativeKey` — remount legislative screen each government
 
-`cardSkin` is **frontend-only** (not sent to the API). It is passed into gameplay screens as a prop. Optional per-seat `TablePlayer.cardSkin` remains reserved for a future owned-packs plan; v1 seats fall back to the table preset.
+`cardSkin` is not part of `PublicView`. Optional per-seat `TablePlayer.cardSkin` remains reserved for owned-packs work; v1 seats fall back to the table preset.
 
 ### Session model (`gameSession.ts`)
 
@@ -66,8 +73,10 @@ Roles are stored from `role_reveal` at create and preserved in `mergeView`.
 
 | Module | Role |
 |--------|------|
-| `api/client.ts` | `fetch` helpers; `ApiError` with status + FastAPI `detail` |
-| `api/types.ts` | DTOs matching API (`PublicView`, `ActionResponse`, etc.) |
+| `api/client.ts` | `fetch` helpers with `credentials: 'include'`; `ApiError` with status + FastAPI `detail`; game + auth calls |
+| `api/types.ts` | DTOs matching API (`PublicView`, `ActionResponse`, `User`, etc.) |
+| `auth.ts` | `loadMe()` — `GET /me` → user or `null` on 401; rethrows other errors |
+| `gameCatalog.ts` | Hub catalog (`secret-cards-v1` available; `secret-cards-v2` coming soon) |
 
 Pattern: screens call client → update session via `mergeView` / `onSessionChange` → branch on `view.phase` / `win_reason`.
 

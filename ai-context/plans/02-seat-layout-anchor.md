@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** ready  
-**Depends on:** none (UI-only; can ship before or after `01`)  
+**Depends on:** none (UI-only; accounts/`01` already shipped)  
 **Priority:** v2 phase 2
 
 ## Goal

@@ -5,8 +5,8 @@
 | Package | Owns | Does not own |
 |---------|------|----------------|
 | `cards/` | Generic `Card`, `CardPile`, `CardTable`, `DeckProtocol` | Any Secret Cards rules |
-| `secret_cards/` | Game model, roles, law deck, engine, privacy views | HTTP, UI |
-| `api/` | FastAPI app, routes, Pydantic schemas, in-memory sessions | Rules logic (delegates to engine) |
+| `secret_cards/` | Game model, roles, law deck, engine, privacy views | HTTP, UI, accounts |
+| `api/` | FastAPI app, game routes, auth platform, Pydantic schemas, in-memory game sessions, SQLite accounts | Rules logic (delegates to engine) |
 | `tests/` | pytest suites mirroring packages | — |
 
 ---
@@ -70,14 +70,31 @@ Public re-exports: `secret_cards/__init__.py`.
 
 ## `api/`
 
+### App shell
+
 | Module | Responsibility |
 |--------|----------------|
-| `app.py` | FastAPI app, CORS, mounts router, `GET /health` |
-| `routes.py` | All `/api/games*` routes; maps `EngineError` → HTTP 400; builds DTOs from views |
-| `schemas.py` | Pydantic request/response models |
-| `session.py` | `SessionStore` / `GameSession` — process-local dict by `game_id` |
+| `app.py` | FastAPI app, CORS (credentials on), lifespan `init_db()`, mounts game + auth routers, `GET /health` |
+| `routes.py` | All `/api/games*` routes; maps `EngineError` → HTTP 400; builds DTOs from views. **No auth required.** |
+| `schemas.py` | Pydantic request/response models (game + auth) |
+| `session.py` | `SessionStore` / `GameSession` — process-local dict by `game_id` (ephemeral games only) |
+| `db.py` | SQLite connect/path/`init_db` schema DDL; `DEFAULT_CARD_SKIN` / `ALLOWED_CARD_SKINS`. No auth use-cases. |
 
-API does **not** implement rules; it loads session state, calls engine functions, and serializes via `secret_cards.views`.
+Game routes do **not** implement rules; they load session state, call engine functions, and serialize via `secret_cards.views`.
+
+### Auth platform (`api/auth/`)
+
+Layered: **routes/deps → service → repository → db**. Never reverse.
+
+| Module | Layer | Responsibility |
+|--------|-------|----------------|
+| `routes.py` | HTTP | `/api/auth/*`; cookies; map domain errors → status codes |
+| `deps.py` | HTTP | `require_user`, `session_token_from_request` from cookie |
+| `service.py` | Business | Register/login/logout/profile rules, normalization, session TTL, skin allow-list, domain errors. **No SQL.** |
+| `passwords.py` | Business helpers | bcrypt hash/verify; `MIN_PASSWORD_LENGTH = 6` |
+| `repository.py` | Data access | SQL for `users` / `sessions`; row→`UserRecord`; `DuplicateKeyError`. **No FastAPI/cookies.** |
+
+**SQLite tables (accounts only):** `users` (id, username, email, password_hash, display_name, card_skin, created_at); `sessions` (id, user_id, expires_at, created_at). Guest play has **no** DB row.
 
 ---
 
@@ -87,4 +104,5 @@ API does **not** implement rules; it loads session state, calls engine functions
 |------|--------|
 | `tests/cards/` | Pile/table behavior + layer-boundary import guard |
 | `tests/secret_cards/` | Start, nominate, vote, legislative, law deck, model, views, full-game simulations |
-| `tests/api/` | HTTP contract / route behavior via FastAPI test client |
+| `tests/api/test_api.py` | HTTP game contract via FastAPI test client (no cookie required) |
+| `tests/api/test_auth.py` | Auth register/login/me/logout/PATCH; cookie session; game still works without auth |

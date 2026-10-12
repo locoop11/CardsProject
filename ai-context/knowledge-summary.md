@@ -1,36 +1,33 @@
 # Knowledge summary
 
-Secret Cards = local pass-and-play social deduction game. **Python engine** owns rules; **FastAPI** is thin transport with in-memory sessions; **React/Vite** is the shared-device UI. Dependency flow: `frontend` → `api` → `secret_cards` → `cards` (never reverse).
+Secret Cards = local pass-and-play social deduction game plus a login-first app shell. **Python engine** owns rules; **FastAPI** transports games (in-memory) and accounts (SQLite); **React/Vite** is the UI. Dependency flow: `frontend` → `api` → `secret_cards` → `cards` (never reverse). Auth is platform (`api/auth/`, `api/db.py`), not game domain.
 
 ## Stack & runtime
 
-- Engine/API: Python, FastAPI, Pydantic, Uvicorn `:8000`
-- UI: React 19, TypeScript, Vite `:5173` (proxies `/api`, `/health`)
-- Tests: pytest; frontend lint via oxlint
-- No DB/auth; restart clears games
+- Engine/API: Python, FastAPI, Pydantic, Uvicorn `:8000`, bcrypt
+- Accounts: SQLite `users` / `sessions` (`data/secret_cards.db` or `SECRET_CARDS_DB`); cookie `session_id`
+- Games: process-local `SessionStore` only — restart clears games; accounts persist
+- UI: React 19, TypeScript, Vite `:5173` (proxies `/api`, `/health`; `credentials: 'include'`)
+- Tests: pytest (game + auth); frontend lint via oxlint
 
 ## Backend ownership
 
 - `cards/`: generic `Card`, `CardPile`, `CardTable`, `DeckProtocol`
 - `secret_cards/`: `GameState`, roles, law deck (11 black / 6 red), engine phases, `views` privacy layer
-- `api/`: routes, schemas, `SessionStore` (`game_id` → state)
+- `api/`: game routes + schemas + ephemeral store; auth routes → service → repository → db
 
-Engine functions mutate `GameState` in place, log actions, raise `EngineError` on rule breaks.
+Engine mutates `GameState` in place, logs actions, raises `EngineError` on rule breaks.
 
 ## API (essentials)
 
-- `POST /api/games` → `game_id`, `view`, pass-and-play `role_reveal` (name-entry order)
-- `GET` game / role / hand (`viewer_id`; else 403)
-- `POST` nominate, vote, resolve-votes, president-discard, chancellor-enact
-- `DELETE` game
-- Envelope: `ActionResponse` with `view` + optional `votes` / `hand` / `enacted`
-- Never raw `GameState` on the wire
+**Auth:** `POST /api/auth/register|login`, `POST /logout`, `GET|PATCH /me` — cookie session; `UserOut` never includes password hash; password min 6; duplicates `409`; bad login `401`.
+
+**Games (cookie-optional):** `POST /api/games` → `game_id`, `view`, pass-and-play `role_reveal` (name-entry order); `GET` game / role / hand; `POST` nominate, vote, resolve-votes, president-discard, chancellor-enact; `DELETE` game. Envelope: `ActionResponse` with `view` + optional `votes` / `hand` / `enacted`. Never raw `GameState`.
 
 ## Frontend ownership
 
-`App` steps: **settings** (hub / names / skin panels) → roleReveal → nomination ↔ legislative → win.  
-Start game from the hub. Whole-table **`cardSkin`** (`default` \| `party`) is client-only and passed into screens. Art via `cardAssets` catalogs (Hitler / role / law); party generic back matches classic `default/back.png`.  
-`GameSession` mirrors `PublicView`; roles kept from create via `mergeView`. API via `api/client.ts`.
+`App` steps: **login** → (**gamesHub** / **account** if signed in) → settings (hub / names / skin) → roleReveal → nomination ↔ legislative → win.  
+Guest = local `playMode` → v1 only. Hub catalog: v1 available, v2 coming soon. Whole-table **`cardSkin`** (`default` \| `party`): account-persisted when signed in; client-only for guests. Art via `cardAssets` resolve helpers. `GameSession` mirrors `PublicView`; roles kept via `mergeView`.
 
 ## Game rules (compressed)
 
@@ -42,7 +39,9 @@ Start game from the hub. Whole-table **`cardSkin`** (`default` \| `party`) is cl
 ## Patterns agents must respect
 
 - Rules live in `secret_cards.engine.*`, not in UI or route handlers
+- Auth layering: no SQL in service/routes; no HTTP in repository
 - Public data via `views`; hands viewer-scoped
 - `cards` must not import `secret_cards`
+- Do not lock `/api/games*` behind auth
 - Card UI uses resolve helpers only; no pack-shape branching in screens
 - Contracts: `api-contracts.md`; maps: `backend-map.md` / `frontend-map.md`; rationale: `decisions.md`; backlog: `plans/`

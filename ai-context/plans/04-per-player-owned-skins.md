@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** proposed (deferred — after multi-device)  
-**Depends on:** `01-accounts-auth`; whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker)
+**Depends on:** accounts auth (**shipped**); whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker)
 
 ## Goal
 

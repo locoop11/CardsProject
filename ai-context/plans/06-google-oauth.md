@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** proposed  
-**Depends on:** `01-accounts-auth` (required); preferably after `03` multi-device is stable  
+**Depends on:** accounts auth (**shipped**); preferably after `03` multi-device is stable  
 **Priority:** last — after `04` / `05` unless human promotes earlier
 
 ## Goal

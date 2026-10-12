@@ -94,22 +94,23 @@ Pointers into living ai-context / code.
 
 **v1 pass-and-play** is complete for product scope. Open plans below are **v2 / v3** work.
 
-Ready plans (`01`–`03`) include a **Developer starting point**: suggested order, files to create/modify, and what not to touch.
+Ready plans include a **Developer starting point**: suggested order, files to create/modify, and what not to touch.
 
 | File | Concern | Status |
 |------|---------|--------|
 | `00-data-entities.md` | **Reference:** what we store, tiers A–D, field-level entities | locked catalog (not a build ticket) |
-| `01-accounts-auth.md` | Login-first UI, guest→v1 only, Games hub (v1/v2…), accounts API | ready — v2 phase 1 |
-| `02-seat-layout-anchor.md` | Bottom-center seat geometry + viewer rotation helper | ready — v2 phase 2 |
-| `03-multi-device-privacy.md` | Option A privacy, rooms/join, authz, multi-device play | ready — v2 phase 3 |
+| `02-seat-layout-anchor.md` | Bottom-center seat geometry + viewer rotation helper | ready — next |
+| `03-multi-device-privacy.md` | Option A privacy, rooms/join, authz, multi-device play | ready — after `02` |
 | `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs | proposed — deferred |
 | `05-hybrid-table-phone-local.md` | v3 hybrid table phone + personal phones | proposed — deferred |
 | `06-google-oauth.md` | Google / social login | proposed — **last** |
 | `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
 
+**Shipped / removed from queue:** `01-accounts-auth.md` — login-first shell, guest→v1, Games hub, SQLite accounts + layered `api/auth/` (verified in code + `tests/api/test_auth.py`). Living truth is in sibling `ai-context/*.md` files.
+
 **Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive. Privacy = `03` only; seat layout = `02-seat-layout-anchor.md`.
 
-**Execute order:** `01` → `02` → `03`. Do not start `03` until `01` local auth works **and** auth layering acceptance criteria in `01` pass.
+**Execute order:** `02` → `03`. Do not start `03` until seat-layout work in `02` is done (auth prerequisite already shipped).
 
 ## Standing structure rule (platform, games, persistence)
 
@@ -145,7 +146,7 @@ This repo will host **more than one game**. Organize so shared shell and per-gam
 4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer `/api/<game-slug>/…` so namespaces stay clear. Do not globally rename in `01`.
 5. Ephemeral play state may stay in-memory (`api/session.py` or per-game store) until a plan requires durable rooms/DB.
 
-See `01-accounts-auth.md` → **Auth layering** for the auth module map. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
+Auth module map (shipped): see `backend-map.md` / `system-patterns.md` / `decisions.md`. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
 
 ## Current bug plans
 

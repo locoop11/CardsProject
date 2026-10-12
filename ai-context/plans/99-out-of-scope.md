@@ -26,11 +26,11 @@ This file does not schedule implementation. Items below stay out of the **v1 pas
 | Shipping a **second playable game product** | Hub + `cards/` stay multi-game-ready (see plans README standing rule); no second domain package until a numbered plan |
 | Cryptographically strong default RNG (`secrets.SystemRandom`) | Enough for local shared-device play; crypto RNG is online hardening — promote separately if needed after multi-device |
 
-## Promoted out of this table (tracked as plans)
+## Promoted out of this table
 
-| Item | Plan |
-|------|------|
-| Accounts / authentication | `01-accounts-auth.md` |
+| Item | Where |
+|------|--------|
+| Accounts / authentication | **Shipped** — see living maps (`architecture.md`, `api-contracts.md`, …) |
 | Bottom-anchor seats + rotation | `02-seat-layout-anchor.md` |
 | Multi-device Option A privacy + rooms/join | `03-multi-device-privacy.md` |
 | Per-player owned skin packs | `04-per-player-owned-skins.md` |
