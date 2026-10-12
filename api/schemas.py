@@ -121,3 +121,47 @@ class UserOut(BaseModel):
     email: Optional[str] = None
     display_name: str
     card_skin: str
+
+
+# --- Rooms (multi-device lobby, ephemeral) ---
+
+
+class CreateRoomRequest(BaseModel):
+    player_count: int = Field(..., ge=5, le=10)
+
+
+class JoinRoomRequest(BaseModel):
+    code: str
+
+
+class ClaimSeatRequest(BaseModel):
+    seat_index: int = Field(..., ge=0, le=9)
+
+
+class RoomSeatOut(BaseModel):
+    seat_index: int
+    player_id: str
+    user_id: Optional[str] = None
+    display_name: Optional[str] = None
+
+
+class RoomOut(BaseModel):
+    room_id: str
+    join_code: str
+    host_user_id: str
+    player_count: int
+    game_id: Optional[str] = None
+    seats: list[RoomSeatOut]
+
+
+class StartRoomRequest(BaseModel):
+    """Optional seed for deterministic tests; omitted in normal play."""
+
+    seed: Optional[int] = None
+
+
+class StartRoomResponse(BaseModel):
+    """Multi-device start: public view only — no role_reveal."""
+
+    game_id: str
+    view: PublicViewOut
