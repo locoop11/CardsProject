@@ -7,6 +7,7 @@ import {
 } from '../cardAssets'
 import { BLACK_WIN, RED_WIN, type TablePlayer } from '../gameSession'
 import { roleLabel, type Role, type Team } from '../roles'
+import { rotatePlayersForViewer } from '../seatLayout'
 import { PlayingCardFace } from './PlayingCardFace'
 
 type VoteBorder = 'ja' | 'nein'
@@ -41,6 +42,11 @@ type Props = {
   revealRoles?: boolean
   /** Replace Communist/Fascist labels with a colored win message. */
   winSummary?: WinSummary | null
+  /**
+   * When set, rotate players for seat rendering only so this id sits at
+   * bottom-center. Pass-and-play omits this (unrotated list).
+   */
+  viewerPlayerId?: string | null
 }
 
 /** Place seats evenly around a rounded-rectangle perimeter (phone-friendly). */
@@ -61,8 +67,9 @@ function seatPosition(
   const width = right - left
   const height = bottom - top
   const perimeter = 2 * (width + height)
-  // Start mid-top, walk clockwise so seats hug the rectangle edges.
-  const start = width / 2
+  // Start mid-bottom, walk clockwise so seats hug the rectangle edges.
+  // Index 0 lands at bottom-center (reusable anchor for multi-device "me" later).
+  const start = width + height + width / 2
   let d = (start + (index / total) * perimeter) % perimeter
 
   // Keep left/right seats out of the centered laws oval, but leave a
@@ -117,6 +124,7 @@ export function TableBoard({
   eligibleHighlightIds,
   revealRoles = false,
   winSummary = null,
+  viewerPlayerId = null,
 }: Props) {
   const rejected = new Set(rejectedIds)
   const tappable = new Set(tappableSeatIds ?? [])
@@ -124,11 +132,17 @@ export function TableBoard({
   const revealingVotes = Boolean(voteBorders)
   const redLaws = lawsOnTable.filter((c) => c.color === 'red')
   const blackLaws = lawsOnTable.filter((c) => c.color === 'black')
+  // Display order only; taps and API ids stay on player objects.
+  const displayPlayers =
+    viewerPlayerId != null && viewerPlayerId !== ''
+      ? rotatePlayersForViewer(players, viewerPlayerId)
+      : players
 
   const roleSrcById = new Map<string, string>()
   if (revealRoles) {
     const fascistIndex = { n: 0 }
     const communistIndex = { n: 0 }
+    // Stable art variants from game seat order, not display rotation.
     for (const player of players) {
       const role = player.role as Role | undefined
       if (!role) continue
@@ -278,8 +292,8 @@ export function TableBoard({
         </div>
 
         <ul className="table-seats" aria-label="Players">
-          {players.map((player, index) => {
-            const pos = seatPosition(index, players.length, revealRoles)
+          {displayPlayers.map((player, index) => {
+            const pos = seatPosition(index, displayPlayers.length, revealRoles)
             const isPresident = player.id === presidentId
             const isBarred =
               rejected.has(player.id) || player.id === previousChancellorId
