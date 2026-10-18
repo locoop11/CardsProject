@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** proposed  
-**Depends on:** accounts auth (**shipped**), `02-seat-layout-anchor`, `03-multi-device-privacy`  
+**Depends on:** accounts auth, bottom-anchor seats, multi-device Option A rooms (**all shipped**)  
 **Priority:** lowest — remember only; do not implement until human promotes
 
 ## Goal
@@ -19,7 +19,7 @@ Physical groups may want a shared “table” screen for laws while keeping per-
 
 - Role: **table host** device vs **player** devices.
 - Table device: public board / full enacted laws; no other seats’ private roles.
-- Player devices: account-bound seats, private role/hand, rotated “me” layout from `02`.
+- Player devices: account-bound seats, private role/hand, rotated “me” layout (shipped `seatLayout` / `viewerPlayerId`).
 - Clarify which actions stay on the table phone vs personal phones.
 
 **Out of scope until promoted**
@@ -35,5 +35,5 @@ Physical groups may want a shared “table” screen for laws while keeping per-
 
 ## Notes for implementers
 
-- Do not start this while `01`–`03` are open.
-- Living maps and v2 plans are the active source of truth until this file is promoted to `ready`.
+- Prerequisites `01`–`03` are shipped; promote this file to `ready` only when the human prioritizes v3.
+- Living maps are the active source of truth for what is built; refresh them via Documentation Agent if they still describe rooms as “coming soon.”

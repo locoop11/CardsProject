@@ -16,35 +16,67 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ---
 
-## Split persistence: in-memory games, SQLite accounts
+## Split persistence: in-memory play, SQLite accounts
 
-**Chosen:** Secret Cards **game** sessions stay in process-local `SessionStore` (no game DB). **Accounts** and auth sessions use SQLite (`users`, `sessions`) via `api/db.py` + `api/auth/repository.py`.
+**Chosen:** **Games** and **rooms** stay process-local. **Accounts** / auth sessions use SQLite via `api/db.py` + `api/auth/repository.py`.
 
-**Why:** Local pass-and-play does not need durable game state; identity does need durable users for hub/profile and future multi-device work.
+**Why:** Local and short-lived lobbies do not need durable play storage yet; identity does.
 
-**Tradeoff:** API restart loses in-flight games; accounts survive. Game store is not multi-worker safe.
+**Tradeoff:** API restart loses games and rooms; accounts survive. Not multi-worker safe for play state.
 
-**Rejected:** Putting account SQL inside `secret_cards`; requiring auth on `/api/games*` for v1 guest play.
+**Rejected:** Account SQL inside `secret_cards`; requiring auth on local `/api/games*` create/mutations.
 
 ---
 
 ## Auth platform layering (N-layer, no ORM)
 
-**Chosen:** `api/auth/` as routes/deps → service → repository → `db`. bcrypt passwords; HttpOnly `session_id` cookie (30-day TTL). No ORM.
+**Chosen:** `api/auth/` as routes/deps → service → repository → `db`. bcrypt; HttpOnly `session_id` (30-day TTL). No ORM.
 
-**Why:** Clear ownership for a small platform module; matches standing v2+ persistence rule without a Clean/hexagonal rewrite.
+**Why:** Clear ownership without a Clean/hexagonal rewrite.
 
-**Rejected:** SQL in service or routes; cookie logic in repository; SQLAlchemy/Alembic for this phase.
+**Rejected:** SQL in service/routes; cookie logic in repository; SQLAlchemy/Alembic for this phase.
 
 ---
 
-## Login-first shell; guest → v1 only
+## Login-first shell; guest → v1 only; accounts get hub + v2
 
-**Chosen:** Cold start is Login (or Games hub if cookied). **Play as guest** is explicit and opens v1 only. Signed-in users land on Games hub (`gameCatalog`), not Settings hub. Logout returns to Login. Guest is frontend `playMode` only — no guest DB user.
+**Chosen:** Cold start is Login (or Games hub if cookied). **Play as guest** → v1 only. Signed-in users get Games hub with **v1 and v2**. Logout → Login. Guest is frontend `playMode` only.
 
-**Why:** Identity-ready product surface without blocking casual local play.
+**Why:** Identity-ready product without blocking casual local play.
 
-**Rejected:** Silent anonymous entry into Settings hub; giving guests the Games hub or v2 UI.
+**Rejected:** Silent anonymous entry; giving guests the hub or online lobby.
+
+---
+
+## Option A multi-device privacy (seat bindings)
+
+**Chosen:** Honest enforcement. Room start attaches `player_id → user_id` on the in-memory game session. Bound games require cookie + matching seat for role, hand, and actor mutations. Multi-device start returns **no** full `role_reveal`. Local create keeps pass-and-play `role_reveal` and cookie-optional mutations. `ActionResponse.hand` only for proven office holder when bound.
+
+**Why:** Unauthenticated “privacy theater” role/hand GETs were not real secrecy.
+
+**Rejected:** Global auth middleware on all `/api/games*`; mid-game teammate role peek APIs (unless a future plan adds them).
+
+**Tests:** `tests/api/test_privacy_option_a.py`, `test_rooms.py`, `test_session_bindings.py`.
+
+---
+
+## Ephemeral rooms lobby
+
+**Chosen:** In-memory `api/rooms/` (routes → service → store). Host creates; others join by code; claim seats; host starts when all seats claimed by distinct users.
+
+**Why:** Enough to prove multi-device play without durable lobby DB.
+
+**Tradeoff:** Restart clears lobbies; single process only.
+
+---
+
+## Bottom-center seat layout + viewer rotation
+
+**Chosen:** `TableBoard` mid-bottom seat anchor. `rotatePlayersForViewer` puts “me” at index 0 for display. Display-only — never send rotated order to the API.
+
+**Why:** Multi-device UX expects the local player at the bottom; relative clockwise order stays meaningful.
+
+**Tests:** `tests/frontend/test_seat_layout.py`.
 
 ---
 
@@ -52,15 +84,15 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 **Chosen:** `public_view` / `legislative_hand` / `role_for_player`; never return `GameState`.
 
-**Why:** Same contract works when multi-device privacy is required later.
+**Why:** Same projections serve local and multi-device; authorization wraps them for bound games.
 
-**Pass-and-play exception:** `POST /api/games` includes full `role_reveal` for the shared device. Prefer per-player role endpoint for multi-device (endpoint already exists).
+**Pass-and-play exception:** `POST /api/games` includes full `role_reveal` for the shared device.
 
 ---
 
-## Role reveal order = name entry order
+## Role reveal order = name entry order (v1)
 
-**Chosen:** After seat shuffle for gameplay, reveal list is reordered to match typed names.
+**Chosen:** After seat shuffle for gameplay, local reveal list is reordered to match typed names.
 
 **Why:** Physical pass-around follows how people sat/typed, not shuffled presidential order.
 
@@ -70,9 +102,9 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 **Chosen:** Engine mutates one `GameState`; appends `GameAction` entries.
 
-**Why:** Simple for a turn-based local game; log enables future replay/persistence without changing call sites.
+**Why:** Simple for turn-based play; log enables future replay/persistence without changing call sites.
 
-**Tradeoff:** Callers must not share state across threads without external locking (not needed for current single-process local API).
+**Tradeoff:** Callers must not share state across threads without external locking.
 
 ---
 
@@ -80,7 +112,7 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 **Chosen:** Approve only if `ja_count > nein_count`; unresolved voters filled as Nein on resolve.
 
-**Why:** Matches intended election strictness and pass-and-play timeout behavior.
+**Why:** Matches intended election strictness; online bound president can force resolve.
 
 ---
 
@@ -94,47 +126,37 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ## Frontend step machine, not router
 
-**Chosen:** `App` step union drives screens (login / hub / account / v1 flow).
+**Chosen:** `App` step union (login / hub / account / v1 settings / online lobby / gameplay).
 
-**Why:** Linear, device-pass flow; avoids URL/deep-link complexity for local play.
+**Why:** Linear flows for local and online without URL/deep-link complexity yet.
 
 ---
 
 ## File-based card skins
 
-**Chosen:** Art under `public/cards/<skinId>/`. A pack exposes **three catalogs** — **Hitler**, **role**, **law** (Option A). UI resolves art via helpers (`resolveHitler` / `resolveRole` / `resolveLaw` / `cardBackSrc`).
+**Chosen:** Art under `public/cards/<skinId>/`. Packs expose Hitler / role / law catalogs (Option A). Resolve helpers only.
 
-**Registered packs today:** `default` (Classic poker), `party` (Party).
+**Registered packs:** `default`, `party`. Party generic `back.png` matches `default/back.png`.
 
-**`default` rules:** Hitler = Ace of Spades; law faces = poker cards **excluding** Ace of Spades; roles use poker faces (Hitler still AS).
+**Account skin:** Signed-in `User.card_skin` is whole-table preset; guests client-only.
 
-**`party` rules:** Dedicated hitler/role/law image files; optional team-colored backs. **Generic face-down (`back.png`) is the same art as `default/back.png`** so undrawn/deck backs stay consistent with the classic pack unless a future pack overrides it.
-
-**Account skin:** Signed-in `User.card_skin` is the whole-table preset for logged-in v1; changes PATCH to the account. Guest skin remains client-only.
-
-**Why:** Swap packs without touching game rules; catalogs match how the game talks about cards; leaves a clean path to per-player owned packs later.
-
-**Deferred:** Per-player owned / mixed packs — see `plans/04-per-player-owned-skins.md`.
+**Deferred:** Per-player owned / mixed packs — `plans/04-per-player-owned-skins.md`.
 
 ---
 
 ## v1 shuffle: PRNG is enough for pass-and-play
 
-**Chosen:** Keep Python’s injectable PRNG (`random.Random`) for v1 local shared-device play. Do **not** block v1 on `secrets.SystemRandom`.
+**Chosen:** Keep injectable `random.Random` for local shared-device play. Do not block on `secrets.SystemRandom`.
 
-**Why:** Law composition (11 black / 6 red), role tables, and Fisher–Yates shuffles already give rule-correct odds for kitchen-table play. Cryptographic RNG matters when games are online and players cannot trust a shared device — that is **v2**, listed under `plans/99-out-of-scope.md`.
-
-**Rejected for v1:** Treating crypto RNG as a ship blocker for pass-and-play.
+**Why:** Rule-correct odds for kitchen-table / local multi-browser. Crypto RNG remains deferred (`plans/99-out-of-scope.md`) unless promoted.
 
 ---
 
 ## Settings hub (v1 pre-game, not app entry)
 
-**Chosen:** v1 pre-game is a **hub** with nested panels (Names, Card set skin). **Start game** lives on that hub and creates the API session. App **entry** is Login (or Games hub when signed in), not this settings hub.
+**Chosen:** v1 pre-game hub (Names, Card set skin, Start). App **entry** is Login / Games hub.
 
-**Why:** One place for table options before pass-and-play; identity shell sits above the game.
-
-**Rejected:** Deep-linked routes per settings page; mixing skin choice into the API create payload; opening Settings hub as the cold-start screen.
+**Rejected:** Deep-linked settings routes; skin on API create payload; Settings as cold-start screen.
 
 ---
 
@@ -142,10 +164,12 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 - Importing `secret_cards` from `cards`.
 - Returning raw `GameState` (or roles/deck/hand) on public board endpoints.
-- Implementing win/nomination rules in the React UI as authority (UI may mirror constants for display; engine decides).
+- Implementing win/nomination rules in the React UI as authority.
 - Putting SQL in auth routes/service or HTTP/cookies in the auth repository.
-- Putting account/auth logic in `secret_cards`.
-- Assuming **game** sessions survive API restart or work across multiple Uvicorn workers.
-- Requiring auth cookies for `/api/games*` (breaks guest v1 and game tests).
-- Changing votes after cast (engine rejects; do not add “edit vote” without an explicit product decision).
-- Silent anonymous entry into gameplay (guest must be explicit).
+- Putting account/auth/room logic in `secret_cards`.
+- Assuming games/rooms survive API restart or work across multiple Uvicorn workers.
+- Locking **local** `/api/games*` behind auth (breaks guest v1 and game tests).
+- Letting bound callers read or act as another seat (must be `403`).
+- Sending UI-rotated seat order to the API as authority.
+- Changing votes after cast without an explicit product decision.
+- Silent anonymous entry into gameplay.

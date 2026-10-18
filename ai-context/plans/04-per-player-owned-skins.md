@@ -1,52 +1,116 @@
-# 04 — Per-player owned skin packs (future)
+# 04 — Per-player owned skin packs
 
 **Kind:** feature  
-**Status:** proposed (deferred — after multi-device)  
-**Depends on:** accounts auth (**shipped**); whole-table Option A catalogs already in the UI (`cardAssets` / settings skin picker)
+**Status:** ready  
+**Depends on:** accounts auth (**shipped**); multi-device optional for online seats  
+**Priority:** next product feature after shipped `01`–`03`
 
 ## Goal
 
-After accounts exist, let each player **own** skin packs and apply personalization — especially **role** and **Hitler** art — so two players at the same table can show different Hitler (or role) skins. **Law** personalization is intentionally undecided.
+Let each account **own** skin packs and **equip** Hitler / role art independently so two players at the same table can show different Hitler (or role) skins. Law art stays the **table preset** for this plan. Image **bytes** stay on disk / object storage; the DB holds pack/ownership/equip metadata (`00-data-entities.md`).
 
 ## Why
 
-Product direction: skins become collectible / owned, not only a single table preset. Role and Hitler cards are naturally per-player (private reveal, seat art). Laws are shared board objects, so ownership rules need a separate product decision later.
+Skins become collectible / owned, not only one whole-table `card_skin`. Role and Hitler cards are per-player; laws are shared board objects — law ownership rules stay deferred.
 
-## In scope / out of scope (when this becomes active)
+## Product locks (this plan)
 
-**Likely in scope**
+| Topic | Lock |
+|-------|------|
+| **Law art** | **Table preset only** — use existing whole-table skin (`User.card_skin` / table `cardSkin`). No per-player law equip in `04`. |
+| **Hitler / role** | Per-player via **`UserEquip`** → owned **`SkinPack`**. |
+| **Ownership** | **`UserSkinPacks`** join table (not a JSON list on `User`). |
+| **Granting** | No storefront. On register (and one-time migration for existing users): grant seeded packs **`default`** and **`party`**. |
+| **Identity** | All durable rows use **`id` PKs / FKs**. Packs may have a unique **`code`** (`default`, `party`) only to map to existing `public/cards/<code>/` folders — not as a substitute for `id`. |
+| **Bytes** | `CardAsset.storage_key` (or pack `code` + resolve helpers) → files under `frontend/public/cards/…`. **No image BLOBs in SQLite.** |
+| **Guest** | No ownership. Guest keeps client-only whole-table skin picker as today. |
+| **Online** | Each bound seat’s equipped Hitler/role comes from that seat’s user; law/back still table preset. |
 
-- Account inventory via **`UserSkinPacks`** (user ↔ `SkinPack`); API exposes the owned list on the user.
-- Catalog: `SkinPack`, `CardAsset` (bytes via `storage_key`, not DB BLOB), `SkinPackAsset`, optional **`CardAssetGameRule`** (e.g. law art restricted to `secret-cards`).
-- Per-player equip (`UserEquip`) for **Hitler** / **Role** (and law rules when decided) from packs they own.
-- Table still needs a rule for whose art is shown when (e.g. each seat uses that player’s role/Hitler art on reveal/win).
-- Reuse Option A resolve helpers, extended to accept a per-player skin (or per-catalog override) instead of only the table preset.
-- Entity field map: `00-data-entities.md` Part 2.
+## In scope / out of scope
 
-**Out of scope until decided**
+**In scope**
 
-- How **law** cards pick art when players own different law packs (shared deck / majority / host preset / etc.).
-- Purchases / storefront implementation details until product defines them.
+- SQLite: `skin_packs`, `user_skin_packs`, `user_equip`; optional `card_assets` + `skin_pack_assets` (+ optional `card_asset_game_rules`) if seeding asset rows — otherwise pack `code` + existing `cardAssets.ts` resolve path is enough for v1 packs.
+- Layered API: routes → service → repository → `db` (same as auth).
+- HTTP: list owned packs; equip Hitler/role; profile/`me` exposes owned pack ids + equip summary.
+- Seed `default` + `party` packs; grant both to new and existing users.
+- UI: account (or skin) UI to equip Hitler/role from owned packs; gameplay screens resolve per-seat Hitler/role via helpers (extend `resolveHitler` / `resolveRole`).
+- Pass-and-play with account: each typed seat that maps to the logged-in user can use that user’s equip; other seats fall back to table preset (local shared device — document in UI that only *your* seat personalization applies when multi-account isn’t present; online uses each user’s equip).
 
-## Relationship to current app
+**Out of scope**
 
-| Now (shipped / `01`) | Later (`04`) |
-|----------------------|--------------|
-| One `cardSkin` for the whole table (or account table skin when logged in on pass-and-play) | Per-player overrides for Hitler / roles |
-| Pack = full preset (three catalogs) | Player may mix owned packs per catalog |
-| Accounts in `01` | Ownership + equip enforcement |
+- Storefront / purchases / payments.
+- Per-player **law** packs (explicitly table preset).
+- Uploading custom PNGs.
+- ORM / Alembic (additive `CREATE TABLE IF NOT EXISTS` / seed in `init_db` or auth-style init is fine).
+- Durable `GameInstance` history (`00` Part 2 play entities).
 
-Keep `resolveHitler` / `resolveRole` / `resolveLaw(skinId, …)` so `skinId` can later come from the player profile.
+## Acceptance criteria
 
-## Acceptance criteria (for when scheduled)
+- [ ] Seeded packs `default` and `party` exist; registered users own both (`UserSkinPacks`).
+- [ ] User cannot equip a pack they do not own (`403`/`400`).
+- [ ] `GET` profile (or dedicated endpoints) returns owned packs + current Hitler/role equip.
+- [ ] Two different accounts at an online table can show different Hitler and/or role art for their seats.
+- [ ] Law cards still follow the **table preset** only.
+- [ ] Guests unchanged: no ownership API; client table skin only.
+- [ ] Image bytes not stored in SQLite.
+- [ ] Auth layering preserved; new persistence goes through a repository module.
+- [ ] Tests cover ownership grant, equip deny, and at least one happy-path equip + `/me` (or equivalent) shape.
 
-- [ ] Documented product rule for which art appears on shared vs private surfaces.
-- [ ] Per-player Hitler and role art can differ in one game session.
-- [ ] Law art behavior explicitly decided and implemented (or explicitly “table preset only”).
-- [ ] Ownership enforced server-side (players cannot equip packs they do not own).
+## Data contract (minimum)
+
+| Method | Path | Auth | Body / notes | Success |
+|--------|------|------|--------------|---------|
+| GET | `/api/auth/me` (extend) **or** `/api/skins/me` | session | — | owned packs + equip (`hitler_pack_id`, `role_pack_id` or pack `code`s) + existing profile fields |
+| PATCH | `/api/skins/equip` (or `/api/auth/me` equip fields) | session | `{ "hitler_pack_id"?`, `"role_pack_id"?` }` (ids) | `200` equip summary |
+| GET | `/api/skins/packs` | session optional | catalog of active packs | `200` list |
+
+Exact path names flexible if Router stays clear; prefer **`id`** in JSON, not folder codes alone (codes may appear as display/`code` fields).
+
+**Wire for play (online):** when building client session / seat props, each seat’s Hitler/role skin comes from that bound user’s equip; do not put pack ownership secrets into `PublicView`. Prefer client fetch of own equip + optional lightweight public “equipped pack id per seat” only if needed for others to render your seat art — if others must see your Hitler card art on reveal, either (a) reveal screen only shows own card (already true for online role reveal) or (b) expose non-sensitive equip pack ids on a bound-safe endpoint. **Do not** leak other seats’ roles when exposing equip.
+
+## Developer starting point
+
+**Suggested order:**
+
+1. Schema + seed in `api/db.py` (or skins module init): `skin_packs`, `user_skin_packs`, `user_equip`; seed `default`/`party`.
+2. Repository + service + routes (layered); grant packs on register; backfill existing users once.
+3. Extend `/me` (or skins routes) + pytest.
+4. Frontend types/client; Account (or Skin) UI to equip Hitler/role from owned list.
+5. Wire resolve helpers / seat props so online (and account pass-and-play where applicable) use per-player Hitler/role; law stays table `cardSkin`.
+6. Keep `User.card_skin` as **table preset** for laws (and guest/fallback) until a later plan replaces it with `UserEquip` slot `table_preset`.
+
+**Do not touch:** `secret_cards/` engine rules; room authz behavior; do not add image BLOBs.
+
+### Files likely to create
+
+| Path | Purpose |
+|------|---------|
+| `api/skins/` (routes, service, repository) **or** extend `api/auth/` carefully | Packs / ownership / equip — prefer **`api/skins/`** so auth stays login-focused |
+| `tests/api/test_skins.py` | Grant, equip, deny, me shape |
+
+### Files likely to modify
+
+| Path | Change |
+|------|--------|
+| `api/db.py` | Tables + seed |
+| `api/auth/service.py` | Grant packs on register (call skins service) |
+| `api/schemas.py` | Pack / equip / extended me DTOs |
+| `api/app.py` | Mount skins router if separate |
+| `frontend/src/api/types.ts` / `client.ts` | Owned packs + equip |
+| `frontend/src/screens/AccountScreen.tsx` (and/or Skin UI) | Equip pickers |
+| `frontend/src/cardAssets.ts` / screens | Per-seat Hitler/role resolve |
+| `frontend/src/App.tsx` / `gameSession.ts` | Pass per-seat skins where needed |
+
+### Direction notes
+
+- Entity detail: `00-data-entities.md` Part 2 (`SkinPack`, `UserSkinPacks`, `UserEquip`, optional `CardAsset*`).
+- Prefer equip by **`skin_pack_id`** for Hitler and role slots; resolve art via pack `code` → existing folder catalogs until `CardAsset` rows are worth it.
+- If you add `CardAsset` now: seed `storage_key` like `cards/party/hitler.png`; still no BLOBs.
+- Multi-device: seat art for *other* players’ face-down roles must not reveal role; only use per-player art on surfaces that already show that seat’s identity (own reveal, win flip, etc.).
 
 ## Notes for implementers
 
-- Option A catalogs: `frontend/src/cardAssets.ts` and settings skin UI; `ai-context/decisions.md`.
-- Prefer extending resolve helpers over scattering per-player conditionals in every screen.
-- Pass-and-play logged-in behavior in `01` is **whole-table account skin**, not this plan.
+- Today: whole-table `card_skin` on `User` + `cardAssets.ts` packs `default` \| `party`.
+- Living maps may still describe table-only skins — Documentation Agent updates after ship.
+- Google OAuth / hybrid table-phone remain `06` / `05`.

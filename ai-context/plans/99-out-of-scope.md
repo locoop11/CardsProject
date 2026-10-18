@@ -20,7 +20,7 @@ This file does not schedule implementation. Items below stay out of the **v1 pas
 | Item | Still true because… |
 |------|----------------------|
 | Player eliminations / presidential powers / investigation powers | `Player.is_alive` exists but unused; no powers in engine |
-| Multi-worker shared game state / durable game rooms as a generic platform | Games still process-local until a future persistence plan beyond `03` rooms |
+| Multi-worker shared game state / durable game rooms as a generic platform | Live rooms/games are process-local; durable history is catalogued in `00` but not scheduled |
 | Action-log / stats **persistence** and replay storage | Live `action_log` stays in-process; durable `GameInstance` / `GameAction` shape is catalogued in `00-data-entities.md` but not scheduled until a history plan |
 | Full configurable **engine** settings UI (term limits, voting window, etc.) | Engine `Settings` toggles exist as defaults only; pre-game hub is shipped — this row is only about engine rule toggles |
 | Shipping a **second playable game product** | Hub + `cards/` stay multi-game-ready (see plans README standing rule); no second domain package until a numbered plan |
@@ -30,12 +30,12 @@ This file does not schedule implementation. Items below stay out of the **v1 pas
 
 | Item | Where |
 |------|--------|
-| Accounts / authentication | **Shipped** — see living maps (`architecture.md`, `api-contracts.md`, …) |
-| Bottom-anchor seats + rotation | `02-seat-layout-anchor.md` |
-| Multi-device Option A privacy + rooms/join | `03-multi-device-privacy.md` |
-| Per-player owned skin packs | `04-per-player-owned-skins.md` |
-| Hybrid table-phone local (v3) | `05-hybrid-table-phone-local.md` |
-| Google / social OAuth | `06-google-oauth.md` |
+| Accounts / authentication | **Shipped** — living maps / `api/auth/` |
+| Bottom-anchor seats + rotation | **Shipped** — `seatLayout.ts`, mid-bottom `TableBoard` |
+| Multi-device Option A privacy + rooms/join | **Shipped** — `api/rooms/`, `api/authz.py`, online UI |
+| Per-player owned skin packs | `04-per-player-owned-skins.md` (**ready**) |
+| Hybrid table-phone local (v3) | `05-hybrid-table-phone-local.md` (open) |
+| Google / social OAuth | `06-google-oauth.md` (open) |
 
 ## Acceptance criteria
 

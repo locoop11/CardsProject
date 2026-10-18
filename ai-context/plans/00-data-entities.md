@@ -25,15 +25,15 @@ Single catalog of **entities**, **relationships**, and **storage tiers**. Design
 
 | Tag | Meaning |
 |-----|---------|
-| **SHIP `01`** | Implement now (auth) |
+| **SHIPPED** | In production code (plans `01`–`03` removed from queue) |
 | **TARGET** | Locked shape for future plans — do not invent competing models |
-| **LIVE** | In-memory today / `03` — not history yet |
+| **LIVE** | In-memory process store (not durable history) |
 
 ---
 
-# Part 1 — Ship now (`01`)
+# Part 1 — Shipped platform + live play
 
-### `User` — SHIP `01` (tier A)
+### `User` — SHIPPED (tier A)
 
 | Field | Notes |
 |-------|--------|
@@ -47,7 +47,7 @@ Single catalog of **entities**, **relationships**, and **storage tiers**. Design
 
 **Ownership list:** not a JSON column on `User` in the target model. In SQL, “user owns packs” is the **`UserSkinPacks`** relationship (below). APIs may still return `owned_skin_packs: [...]` as a derived list.
 
-### `Session` — SHIP `01` (tier A)
+### `Session` — SHIPPED (tier A)
 
 | Field | Notes |
 |-------|--------|
@@ -59,21 +59,21 @@ Single catalog of **entities**, **relationships**, and **storage tiers**. Design
 
 Frontend `playMode` only.
 
-### Live Secret Cards (unchanged until history ships)
+### Live Secret Cards (SHIPPED ephemeral — until history ships)
 
-- **`GameSession` (LIVE / B):** `game_id`, `state`, later `user_id_by_player_id` (`03`)
+- **`GameSession` (LIVE / B):** `game_id`, `state`, optional `user_id_by_player_id` (bound multi-device)
 - **`GameState` / `Player` / … (C):** engine truth; privacy views only
-- **`Room` (LIVE / B, `03`):** lobby in memory
+- **`Room` (LIVE / B):** in-memory lobby (`api/rooms/`) — create / join / claim / start
 
 ---
 
 # Part 2 — Target durable model (organization / scalability)
 
-History, skin shop, and ownership are **later**. Entities below are the agreed shape so we do not paint ourselves into a corner.
+History remains later. **Ownership / cosmetics** are scheduled in ready plan **`04`**. Entities below are the agreed shape.
 
-## Ownership & cosmetics (platform — mainly plan `04`)
+## Ownership & cosmetics (platform — plan `04` ready)
 
-### `SkinPack` — TARGET (tier A)
+### `SkinPack` — TARGET → implement in `04` (tier A)
 
 A purchasable / grantable **set** of card art (not a single PNG).
 
@@ -151,7 +151,7 @@ What the user **currently applies** (owned packs/assets) per game/slot — separ
 | `slot` | `hitler` \| `role` \| `law` \| `table_preset` \| … |
 | `skin_pack_id` and/or `card_asset_id` | what is equipped (finalize in `04`) |
 
-Until this exists, `User.card_skin` remains the temporary whole-table preset for `01`.
+Until this exists, `User.card_skin` remains the temporary whole-table preset (shipped accounts behavior).
 
 ---
 
@@ -258,10 +258,9 @@ Later, live play can **mirror** into `GameInstance` + append `GameAction` withou
 
 | Phase | Plan | Entities |
 |-------|------|----------|
-| Now | `01` | `User`, `Session` (+ temp `card_skin`); auth repository layering |
-| UI seats | `02` | none durable |
-| Multi-device live | `03` | `Room`, live seat map (memory) |
+| Done | `01`–`03` (removed) | `User`, `Session`; live `Room` + bound `GameSession`; seat UI helpers |
 | Cosmetics / ownership | `04` | `SkinPack`, `CardAsset`, `SkinPackAsset`, `CardAssetGameRule`, `UserSkinPacks`, `UserEquip`; retire temp `card_skin` |
+| Hybrid table-phone | `05` | no new durable entities required at plan time |
 | History / analytics | **future numbered plan** | `GameInstance`, `GameParticipant`, `GameAction` (+ retention policy) |
 | OAuth | `06` | link field/table on `User` |
 
@@ -271,8 +270,7 @@ Later, live play can **mirror** into `GameInstance` + append `GameAction` withou
 
 | Plan | Uses |
 |------|------|
-| `01` | Part 1 only |
-| `03` | Live `Room` / seat map; does **not** require history tables |
 | `04` | Ownership & asset entities (`UserSkinPacks`, …) |
+| `05` | Reuses live Room / bound seats / bottom-anchor layout |
 | Future history plan | Part 2 play entities; retention/storage policy |
-| Second game | New domain package; reuse `User`, packs/assets, `GameInstance.game_slug` |
+| Second game | New domain package; reuse `User`, packs/assets, `GameInstance` → game product `id` |

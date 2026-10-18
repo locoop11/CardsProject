@@ -5,8 +5,8 @@
 | Package | Owns | Does not own |
 |---------|------|----------------|
 | `cards/` | Generic `Card`, `CardPile`, `CardTable`, `DeckProtocol` | Any Secret Cards rules |
-| `secret_cards/` | Game model, roles, law deck, engine, privacy views | HTTP, UI, accounts |
-| `api/` | FastAPI app, game routes, auth platform, Pydantic schemas, in-memory game sessions, SQLite accounts | Rules logic (delegates to engine) |
+| `secret_cards/` | Game model, roles, law deck, engine, privacy views | HTTP, UI, accounts, rooms |
+| `api/` | FastAPI app, game routes, auth, rooms, authz, schemas, in-memory games/rooms, SQLite accounts | Rules logic (delegates to engine) |
 | `tests/` | pytest suites mirroring packages | — |
 
 ---
@@ -62,8 +62,8 @@ Public re-exports: `secret_cards/__init__.py`.
 ### Data domains
 
 - **Players / roles:** `model.Player`, `roles.assign_roles` — assigned once at start; never change.
-- **Board / laws:** `law_deck` (draw pile) + `law_table` (enacted) + `drawn_law_cards` (current hand).
-- **Office / election:** president index, nominee, chancellor, rejected list, votes map, term-limit fields on `Settings` / state.
+- **Board / laws:** `law_deck` + `law_table` + `drawn_law_cards`.
+- **Office / election:** president index, nominee, chancellor, rejected list, votes map, term limits.
 - **Outcome:** `winner`, `win_reason`, `result` when `phase == game_over`.
 
 ---
@@ -74,13 +74,14 @@ Public re-exports: `secret_cards/__init__.py`.
 
 | Module | Responsibility |
 |--------|----------------|
-| `app.py` | FastAPI app, CORS (credentials on), lifespan `init_db()`, mounts game + auth routers, `GET /health` |
-| `routes.py` | All `/api/games*` routes; maps `EngineError` → HTTP 400; builds DTOs from views. **No auth required.** |
-| `schemas.py` | Pydantic request/response models (game + auth) |
-| `session.py` | `SessionStore` / `GameSession` — process-local dict by `game_id` (ephemeral games only) |
-| `db.py` | SQLite connect/path/`init_db` schema DDL; `DEFAULT_CARD_SKIN` / `ALLOWED_CARD_SKINS`. No auth use-cases. |
+| `app.py` | FastAPI app, CORS (credentials on), lifespan `init_db()`, mounts game + auth + rooms routers, `GET /health` |
+| `routes.py` | `/api/games*`; dual-mode authz via `api/authz`; engine → views; `ActionResponse.hand` gated for bound games |
+| `schemas.py` | Pydantic models (game + auth + rooms) |
+| `session.py` | `SessionStore` / `GameSession` — process-local games; optional `user_id_by_player_id` bindings |
+| `authz.py` | Bound-seat helpers: `require_user_if_bound`, `require_bound_seat` / president / chancellor |
+| `db.py` | SQLite connect/path/`init_db`; skin allow-list constants. No auth use-cases. |
 
-Game routes do **not** implement rules; they load session state, call engine functions, and serialize via `secret_cards.views`.
+`GameSession.is_local()` when `user_id_by_player_id is None`. Local routes stay cookie-optional; bound routes require session + matching seat.
 
 ### Auth platform (`api/auth/`)
 
@@ -89,12 +90,24 @@ Layered: **routes/deps → service → repository → db**. Never reverse.
 | Module | Layer | Responsibility |
 |--------|-------|----------------|
 | `routes.py` | HTTP | `/api/auth/*`; cookies; map domain errors → status codes |
-| `deps.py` | HTTP | `require_user`, `session_token_from_request` from cookie |
-| `service.py` | Business | Register/login/logout/profile rules, normalization, session TTL, skin allow-list, domain errors. **No SQL.** |
-| `passwords.py` | Business helpers | bcrypt hash/verify; `MIN_PASSWORD_LENGTH = 6` |
-| `repository.py` | Data access | SQL for `users` / `sessions`; row→`UserRecord`; `DuplicateKeyError`. **No FastAPI/cookies.** |
+| `deps.py` | HTTP | `require_user`, `session_token_from_request` |
+| `service.py` | Business | Register/login/logout/profile rules. **No SQL.** |
+| `passwords.py` | Helpers | bcrypt; `MIN_PASSWORD_LENGTH = 6` |
+| `repository.py` | Data | SQL for `users` / `sessions`. **No FastAPI/cookies.** |
 
-**SQLite tables (accounts only):** `users` (id, username, email, password_hash, display_name, card_skin, created_at); `sessions` (id, user_id, expires_at, created_at). Guest play has **no** DB row.
+**SQLite (accounts only):** `users`, `sessions`. Guest play has no DB row.
+
+### Rooms (`api/rooms/`)
+
+Ephemeral lobby. Layered: **routes → service → store** (in-memory; no SQL).
+
+| Module | Responsibility |
+|--------|----------------|
+| `routes.py` | `/api/rooms*`; session required; map domain errors → HTTP |
+| `service.py` | Create/join/claim/start rules; build bound `GameSession` on start |
+| `store.py` | `Room`, `SeatClaim`, `RoomStore` by `room_id` / join code |
+
+On start: placeholder names preserve claim↔seat through shuffle; then rewrite display names and attach `player_id → user_id` bindings. Response has **no** `role_reveal`.
 
 ---
 
@@ -102,7 +115,11 @@ Layered: **routes/deps → service → repository → db**. Never reverse.
 
 | Path | Focus |
 |------|--------|
-| `tests/cards/` | Pile/table behavior + layer-boundary import guard |
-| `tests/secret_cards/` | Start, nominate, vote, legislative, law deck, model, views, full-game simulations |
-| `tests/api/test_api.py` | HTTP game contract via FastAPI test client (no cookie required) |
-| `tests/api/test_auth.py` | Auth register/login/me/logout/PATCH; cookie session; game still works without auth |
+| `tests/cards/` | Pile/table + layer-boundary import guard |
+| `tests/secret_cards/` | Engine phases, law deck, views, full-game sims |
+| `tests/api/test_api.py` | Local game HTTP (no cookie) |
+| `tests/api/test_auth.py` | Auth cookies + guest game path |
+| `tests/api/test_rooms.py` | Lobby create/join/claim/start |
+| `tests/api/test_privacy_option_a.py` | Bound seat denial / hand / actors |
+| `tests/api/test_session_bindings.py` | Binding helpers on `GameSession` |
+| `tests/frontend/test_seat_layout.py` | `rotatePlayersForViewer` (Python port / mirror) |

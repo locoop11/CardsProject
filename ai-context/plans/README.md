@@ -99,18 +99,22 @@ Ready plans include a **Developer starting point**: suggested order, files to cr
 | File | Concern | Status |
 |------|---------|--------|
 | `00-data-entities.md` | **Reference:** what we store, tiers A–D, field-level entities | locked catalog (not a build ticket) |
-| `02-seat-layout-anchor.md` | Bottom-center seat geometry + viewer rotation helper | ready — next |
-| `03-multi-device-privacy.md` | Option A privacy, rooms/join, authz, multi-device play | ready — after `02` |
-| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs | proposed — deferred |
+| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs + equip | **ready — next** |
 | `05-hybrid-table-phone-local.md` | v3 hybrid table phone + personal phones | proposed — deferred |
 | `06-google-oauth.md` | Google / social login | proposed — **last** |
 | `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
 
-**Shipped / removed from queue:** `01-accounts-auth.md` — login-first shell, guest→v1, Games hub, SQLite accounts + layered `api/auth/` (verified in code + `tests/api/test_auth.py`). Living truth is in sibling `ai-context/*.md` files.
+**Shipped / removed from queue** (living truth in sibling `ai-context/*.md` — Documentation Agent may still need to refresh maps if they lag code):
 
-**Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive. Privacy = `03` only; seat layout = `02-seat-layout-anchor.md`.
+| Removed plan | Shipped in code |
+|--------------|-----------------|
+| `01-accounts-auth.md` | Login-first shell, guest→v1, Games hub, SQLite accounts + layered `api/auth/` |
+| `02-seat-layout-anchor.md` | Mid-bottom seats, `seatLayout.ts` / `rotatePlayersForViewer`, `tests/frontend/test_seat_layout.py` |
+| `03-multi-device-privacy.md` | Rooms lobby, seat bindings, Option A authz, online UI + `tests/api/test_rooms.py` / `test_privacy_option_a.py` |
 
-**Execute order:** `02` → `03`. Do not start `03` until seat-layout work in `02` is done (auth prerequisite already shipped).
+**Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive.
+
+**Execute order (remaining):** `04` → then promote `05` / `06` when the human chooses.
 
 ## Standing structure rule (platform, games, persistence)
 
@@ -143,10 +147,10 @@ This repo will host **more than one game**. Organize so shared shell and per-gam
 1. **New game = new domain package + its own HTTP router + its own UI flow** — do not stuff foreign rules into `secret_cards/`.
 2. **Hub is data-driven** (`gameCatalog` / equivalent): add a catalog entry; do not rewrite the app shell per game.
 3. **Auth and accounts are platform** — all games reuse the same session; guests remain a frontend mode unless a later plan changes that.
-4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer `/api/<game-slug>/…` so namespaces stay clear. Do not globally rename in `01`.
-5. Ephemeral play state may stay in-memory (`api/session.py` or per-game store) until a plan requires durable rooms/DB.
+4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer `/api/<game-id-or-name>/…` so namespaces stay clear.
+5. Ephemeral play state (games + rooms) stays in-memory (`api/session.py`, `api/rooms/`) until a plan requires durable history/DB.
 
-Auth module map (shipped): see `backend-map.md` / `system-patterns.md` / `decisions.md`. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
+Auth, seat layout, and Option A rooms (shipped): see living maps / code. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
 
 ## Current bug plans
 

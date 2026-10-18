@@ -4,9 +4,12 @@ Base: `http://127.0.0.1:8000`. In Vite dev, call `/api/...` and `/health` on the
 
 **Rules**
 
-- Game responses never include raw `GameState`. Public board views omit roles, deck order, and hands. Legislative hands require an authorized `viewer_id`.
-- Auth uses HttpOnly cookie `session_id`. Auth profile responses never include `password_hash`.
-- **`/api/games*` are cookie-optional** (guest play and game tests need no session).
+- Responses never include raw `GameState`. Public board views omit roles, deck order, and hands.
+- Auth uses HttpOnly cookie `session_id`. Profile responses never include `password_hash`.
+- **Local games** (`user_id_by_player_id` unset): `/api/games*` stay **cookie-optional** (guest v1 + pytest).
+- **Bound games** (started from a room): secrets and actor mutations require a valid session; caller’s bound seat must match or `403`. Unauthenticated → `401`.
+- **`ActionResponse.hand`:** local — shared-device office-phase hand as before; bound — only if the authenticated caller’s seat is the current office holder.
+- **Rooms** (`/api/rooms*`): session required. Multi-device start returns **no** `role_reveal`.
 
 ---
 
@@ -21,7 +24,7 @@ Base: `http://127.0.0.1:8000`. In Vite dev, call `/api/...` and `/health` on the
 | Set on | Successful `register` / `login` |
 | Cleared on | `logout` |
 
-Frontend must send cookies (`credentials: 'include'`). CORS allows Vite origins with credentials.
+Frontend must send cookies (`credentials: 'include'`).
 
 ---
 
@@ -60,7 +63,7 @@ Identity normalization: username → strip + casefold; email → strip + lower.
 
 **Response `200` — `UserOut`** + session cookie.
 
-**Errors:** `401` with detail `"Invalid credentials"` (generic; no user enumeration).
+**Errors:** `401` with detail `"Invalid credentials"` (generic).
 
 ---
 
@@ -68,15 +71,13 @@ Identity normalization: username → strip + casefold; email → strip + lower.
 
 Requires valid session cookie.
 
-**Response `204`** + clear cookie. Session row deleted when present.
+**Response `204`** + clear cookie.
 
 **Errors:** `401` if not authenticated.
 
 ---
 
 ### `GET /api/auth/me`
-
-Requires valid session cookie.
 
 **Response `200` — `UserOut`**
 
@@ -85,8 +86,6 @@ Requires valid session cookie.
 ---
 
 ### `PATCH /api/auth/me`
-
-Requires valid session cookie.
 
 **Body:** `{ "display_name"?, "card_skin"? }` — at least one field required.
 
@@ -101,9 +100,74 @@ Requires valid session cookie.
 
 ---
 
+## Rooms (multi-device lobby)
+
+All room routes require a valid session cookie.
+
+### `POST /api/rooms`
+
+Host creates a lobby.
+
+**Body:** `{ "player_count": 5 }` — 5–10.
+
+**Response `201` — `RoomOut`** (host is a member; seats empty until claimed).
+
+**Errors:** `400` unsupported count; `401` unauthenticated.
+
+---
+
+### `POST /api/rooms/join`
+
+**Body:** `{ "code": "ABC123" }` — case-insensitive; stored uppercase.
+
+**Response `200` — `RoomOut`**
+
+**Errors:** `400` empty code / game already started; `401`; `404` unknown code.
+
+---
+
+### `GET /api/rooms/{room_id}`
+
+**Response `200` — `RoomOut`**
+
+**Errors:** `401`; `403` not a member; `404` unknown room.
+
+---
+
+### `POST /api/rooms/{room_id}/claim`
+
+**Body:** `{ "seat_index": 0 }` — `0 .. player_count-1`.
+
+**Response `200` — `RoomOut`**
+
+**Errors:** `400` invalid index / already claimed another seat / game started; `401`; `403` not member; `404`; `409` seat taken by another user.
+
+---
+
+### `POST /api/rooms/{room_id}/start`
+
+Host only. Every seat must be claimed by a **distinct** user.
+
+**Body:** `{ "seed"? }` — optional RNG seed for tests.
+
+**Response `200` — `StartRoomResponse`**
+
+| Field | Notes |
+|-------|--------|
+| `game_id` | New bound game session |
+| `view` | `PublicView` only — **no** `role_reveal` |
+
+Creates engine state, sets `user_id_by_player_id` bindings, sets `room.game_id`.
+
+**Errors:** `400` seats incomplete / already started; `401`; `403` not host / not member; `404`.
+
+---
+
+## Games
+
 ### `POST /api/games`
 
-Start a game (`start_game`). Auth not required.
+Local pass-and-play start. Auth **not** required. Creates an **unbound** session.
 
 **Body**
 
@@ -111,47 +175,51 @@ Start a game (`start_game`). Auth not required.
 |-------|------|--------|
 | `player_count` | int | Required, 5–10 |
 | `player_names` | string[] | Required; length must equal `player_count` |
-| `seed` | int \| omit | Optional; seeds RNG for reproducible games |
+| `seed` | int \| omit | Optional; seeds RNG |
 
 **Response `200` — `CreateGameResponse`**
 
 | Field | Type | Notes |
 |-------|------|--------|
-| `game_id` | string | 12-char hex session id |
-| `view` | `PublicView` | Initial board (phase `nomination`) |
-| `role_reveal` | `RoleRevealPlayer[]` | Pass-and-play only; **name-entry order**, not seat/president order |
+| `game_id` | string | 12-char hex |
+| `view` | `PublicView` | Phase `nomination` |
+| `role_reveal` | `RoleRevealPlayer[]` | Pass-and-play; **name-entry order** |
 
-**Errors:** `400` if name count mismatch or unsupported player count / `start_game` `ValueError`.
+**Errors:** `400` name count / unsupported count / `start_game` `ValueError`.
 
 ---
 
 ### `GET /api/games/{game_id}`
 
+Public board. Auth not required (local or bound).
+
 **Response `200`:** `PublicView`
 
-**Errors:** `404` if unknown game.
+**Errors:** `404` unknown game.
 
 ---
 
 ### `GET /api/games/{game_id}/role/{player_id}`
 
-One player’s role + team (multi-device building block).
+**Local:** any caller may fetch any seat (trusted shared device).  
+**Bound:** cookie required; **403** unless bound seat == `player_id`.
 
 **Response `200` — `RoleRevealPlayer`:** `{ id, name, role, team }`
 
-**Errors:** `404` game or player not found.
+**Errors:** `401` bound + no session; `403` wrong seat; `404` game or player.
 
 ---
 
 ### `GET /api/games/{game_id}/hand?viewer_id=`
 
-Legislative hand for the current office holder.
+Legislative hand for current office holder.
 
-**Query:** `viewer_id` (required) — must be current president in `legislative_president`, or chancellor in `legislative_chancellor`.
+**Local:** `viewer_id` must be office holder or `403`.  
+**Bound:** cookie + bound seat == `viewer_id` **and** office holder.
 
 **Response `200` — `HandResponse`:** `{ viewer_id, cards: CardOut[] }`
 
-**Errors:** `403` if viewer not allowed; `404` unknown game.
+**Errors:** `401` bound + no session; `403` not allowed; `404` unknown game.
 
 ---
 
@@ -159,61 +227,65 @@ Legislative hand for the current office holder.
 
 **Body:** `{ "nominee_id": "p2" }`
 
-If nobody is eligible, engine auto-enacts top LawCard (`nominee_id` ignored); `enacted` may be set.
+**Bound:** must be bound current president.
+
+If nobody eligible, engine auto-enacts; `enacted` may be set.
 
 **Response `200`:** `ActionResponse` (`view`, optional `enacted`)
 
-**Errors:** `400` engine rule violation; `404` unknown game.
+**Errors:** `400` engine; `401`/`403` when bound; `404`.
 
 ---
 
 ### `POST /api/games/{game_id}/vote`
 
-**Body:** `{ "player_id": "p0", "vote": true }` — `true` = Ja, `false` = Nein. Locked after first cast.
+**Body:** `{ "player_id": "p0", "vote": true }` — locked after first cast.
+
+**Bound:** bound seat must equal `player_id`.
 
 **Response `200`:** `ActionResponse` (`view`)
 
-**Errors:** `400` wrong phase / unknown player / already voted; `404` unknown game.
+**Errors:** `400` / `401` / `403` / `404`.
 
 ---
 
 ### `POST /api/games/{game_id}/resolve-votes`
 
-No body. Missing votes filled as Nein. Strict Ja majority required to approve.
+No body. Missing votes filled as Nein. Strict Ja majority to approve.
 
-**Response `200`:** `ActionResponse` with:
+**Bound:** bound current president only (force resolve).
 
-| Extra | When |
-|-------|------|
-| `votes` | Full ballot map after Nein fill-in |
-| `hand` | 3 cards if government approved and game continues (legislative) |
-| `enacted` | Top LawCard if rejects exhausted nominations |
+**Response `200`:** `ActionResponse` with optional `votes`, `hand` (see hand rule above), `enacted`.
 
-**Errors:** `400` wrong phase / no nominee; `404` unknown game.
+**Errors:** `400` / `401` / `403` / `404`.
 
 ---
 
 ### `POST /api/games/{game_id}/president-discard`
 
-**Body:** `{ "card_id": 3 }` — card to discard into the deck.
+**Body:** `{ "card_id": 3 }`
 
-**Response `200`:** `ActionResponse` with remaining `hand` (2 cards). Phase → `legislative_chancellor`.
+**Bound:** bound current president.
+
+**Response `200`:** `ActionResponse` with remaining `hand` when allowed.
 
 ---
 
 ### `POST /api/games/{game_id}/chancellor-enact`
 
-**Body:** `{ "card_id": 7 }` — card **to enact** (other hand card returns to deck).
+**Body:** `{ "card_id": 7 }` — card **to enact**.
 
-**Response `200`:** `ActionResponse` with optional `enacted`. Round advances unless game over.
+**Bound:** bound current chancellor.
+
+**Response `200`:** `ActionResponse` with optional `enacted`.
 
 ---
 
 ### `DELETE /api/games/{game_id}`
 
-Drop in-memory game session.
+Drop in-memory game session (bindings die with it).
 
-**Response:** `204` No Content (always succeeds even if already gone from store’s perspective — store simply pops).
+**Response:** `204` No Content.
 
 ---
 
@@ -225,7 +297,32 @@ Drop in-memory game session.
 { "id": "…", "username": "ada", "email": null, "display_name": "Ada", "card_skin": "default" }
 ```
 
-`card_skin`: `"default"` \| `"party"`. Username/email may be null.
+`card_skin`: `"default"` \| `"party"`.
+
+### `RoomSeatOut`
+
+```json
+{ "seat_index": 0, "player_id": "p0", "user_id": null, "display_name": null }
+```
+
+### `RoomOut`
+
+```json
+{
+  "room_id": "…",
+  "join_code": "ABC123",
+  "host_user_id": "…",
+  "player_count": 5,
+  "game_id": null,
+  "seats": [ /* RoomSeatOut × player_count */ ]
+}
+```
+
+### `StartRoomResponse`
+
+```json
+{ "game_id": "…", "view": { /* PublicView */ } }
+```
 
 ### `CardOut` / LawCard
 
@@ -261,7 +358,7 @@ Drop in-memory game session.
 | `reds_on_table`, `blacks_on_table` | Counts from law table |
 | `laws_on_table` | Enacted cards in play order |
 | `votes_cast` | Player ids who have voted (sorted keys) |
-| `winner`, `win_reason`, `result` | Set when `game_over` |
+| `winner`, `win_reason`, `result` | Set when `game_over` (may include role reveal at table flip) |
 
 ### `ActionResponse`
 
@@ -286,8 +383,8 @@ Optional fields omitted / null when not applicable.
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Engine rule violation, bad auth/profile body, or bad game request |
-| `401` | Missing/invalid session or failed login |
-| `403` | Hand access forbidden for `viewer_id` |
-| `404` | Unknown game or player |
-| `409` | Duplicate username or email on register |
+| `400` | Engine rule violation, bad body, incomplete lobby, etc. |
+| `401` | Missing/invalid session (auth or bound game / rooms) |
+| `403` | Wrong seat, not room member, not host, hand forbidden |
+| `404` | Unknown game, player, or room |
+| `409` | Duplicate username/email, or seat already claimed |

@@ -2,15 +2,16 @@
 
 ## Product
 
-**Secret Cards** is a tabletop-style social deduction game for 5–10 players. **v1** is played on one shared device (pass-and-play). Players have hidden roles on two teams and enact laws until a win condition is met.
+**Secret Cards** is a tabletop-style social deduction game for 5–10 players.
+
+- **v1 — pass-and-play:** one shared device; the group passes the phone for private roles and acts.
+- **v2 — multi-device:** each player on their own device in a room; each sees only their own secrets until the game ends.
 
 The product shell is **login-first**:
 
-- Signed-in players use a **Games hub** to choose what to play.
-- Casual players may choose **Play as guest** and get **v1 only**.
-- Guests are not stored as users. There is no silent anonymous entry into gameplay.
-
-Online multi-device rooms (v2) are not available yet; the hub may list them as coming soon.
+- Signed-in players use a **Games hub** (v1 and v2).
+- **Play as guest** is explicit and opens **v1 only**.
+- Guests are not stored as users. No silent anonymous entry into play.
 
 ---
 
@@ -19,20 +20,22 @@ Online multi-device rooms (v2) are not available yet; the hub may list them as c
 | Term | Meaning |
 |------|---------|
 | **Account** | Durable player identity with display name and preferred card skin |
-| **Guest** | Explicit no-account play mode; v1 pass-and-play only |
-| **Games hub** | Signed-in landing place listing available games/modes |
-| **Team** | `communist` or `fascist` — the side that can win |
-| **Role** | `communist`, `fascist`, or `hitler` (Hitler is on the fascist team) |
-| **President** | Rotating office; nominates chancellor each round |
-| **Chancellor** | Nominee who, if elected, helps legislate laws |
-| **LawCard** | Red (communist) or black (fascist) policy card |
-| **Law table** | Face-up enacted laws; win tracks count by color |
-| **Nomination** | President chooses an eligible chancellor candidate |
-| **Voting** | All players Ja/Nein the government; missing votes count as Nein |
-| **Legislative** | Elected government draws laws; president discards one; chancellor enacts one |
-| **Top enact / auto-enact** | If no eligible nominee remains, the top deck law is enacted immediately |
-| **Term limit** | Previous chancellor (default) cannot be renominated next round; previous president bar is off by default |
-| **Card skin** | Whole-table art pack for the shared device (`default` or `party`) |
+| **Guest** | Explicit no-account mode; v1 only |
+| **Games hub** | Signed-in landing place listing available modes |
+| **Room** | Multi-device lobby with a join code until the host starts |
+| **Join code** | Short code others use to enter the host’s room |
+| **Seat claim** | Binding an account to a lobby seat before start |
+| **Bound seat** | After start: that account may act/see only as that `player_id` |
+| **Team** | `communist` or `fascist` |
+| **Role** | `communist`, `fascist`, or `hitler` (Hitler on fascist team) |
+| **President** | Rotating office; nominates chancellor |
+| **Chancellor** | Nominee who, if elected, helps legislate |
+| **LawCard** | Red (communist) or black (fascist) policy |
+| **Law table** | Face-up enacted laws |
+| **Nomination / Voting / Legislative** | Round phases |
+| **Top enact / auto-enact** | Top deck law when no eligible nominee remains |
+| **Term limit** | Previous chancellor barred by default next round |
+| **Card skin** | Whole-table art pack (`default` or `party`) |
 
 ---
 
@@ -40,9 +43,18 @@ Online multi-device rooms (v2) are not available yet; the hub may list them as c
 
 | Actor | May do |
 |-------|--------|
-| Unauthenticated visitor | See Login; register; sign in; choose Play as guest |
-| Guest | Play Secret Cards v1 only; leave → Login |
-| Signed-in account | Games hub; Account (display name, logout); play v1 with saved card skin |
+| Unauthenticated visitor | Login / register; Play as guest |
+| Guest | Secret Cards v1 only; leave → Login |
+| Signed-in account | Games hub; Account; v1 with saved skin; **v2** host/join/claim/play |
+
+---
+
+## Multi-device secrecy (product)
+
+- Mid-game, each player may know **only their own** role/team (and their legislative hand when they are the office holder).
+- Co-players must not read another seat’s role or hand by guessing ids.
+- At `game_over`, the table may reveal all roles (intentional flip).
+- Pass-and-play remains a separate trusted-device path with full create-time role reveal.
 
 ---
 
@@ -59,7 +71,7 @@ Exactly one Hitler. Counts by player count (communists, fascists including Hitle
 | 9 | 5 | 4 |
 | 10 | 6 | 4 |
 
-Roles are shuffled; seats are then shuffled. Presidency starts at seat index 0 after shuffle. Pass-and-play role reveal still follows the order names were entered.
+Roles are shuffled; seats are then shuffled. Presidency starts at seat index 0 after shuffle. Pass-and-play role reveal follows the order names were entered.
 
 ---
 
@@ -74,12 +86,12 @@ Roles are shuffled; seats are then shuffled. Presidency starts at seat index 0 a
 ## Round workflow
 
 1. **Nomination** — President nominates an eligible player (not self; not barred previous chancellor by default; not already rejected this presidency). If nobody is eligible → auto-enact top law → advance round (or win).
-2. **Voting** — Each player votes once (cannot change). After the voting window, unresolved votes = Nein. Approve only if Ja count **strictly greater** than Nein count.
-3. **On reject** — Nominee is barred for this presidency; stay in nomination with same president. If no eligible left → auto-enact.
-4. **On approve** — Chancellor is seated. If ≥3 black laws already on the table **and** chancellor is Hitler → **fascist win** (`hitler_elected`). Else draw 3 laws → legislative.
-5. **Legislative president** — Sees 3 cards; discards 1 into deck.
-6. **Legislative chancellor** — Sees 2 cards; enacts 1; other returns to deck.
-7. **After enact** — Check law wins; else advance round (rotate president, clear rejections/votes/hand, update term limits).
+2. **Voting** — Each player votes once (cannot change). Unresolved votes = Nein. Approve only if Ja **strictly greater** than Nein. Online: bound president may force resolve when ready.
+3. **On reject** — Nominee barred this presidency; same president. If no eligible left → auto-enact.
+4. **On approve** — Chancellor seated. If ≥3 black laws already on table **and** chancellor is Hitler → **fascist win** (`hitler_elected`). Else draw 3 → legislative.
+5. **Legislative president** — Sees 3; discards 1.
+6. **Legislative chancellor** — Sees 2; enacts 1; other returns to deck.
+7. **After enact** — Check law wins; else advance round.
 
 ---
 
@@ -89,9 +101,7 @@ Roles are shuffled; seats are then shuffled. Presidency starts at seat index 0 a
 |-----------|--------|-------------|
 | ≥5 red laws on table | Communist | `communist_laws` |
 | ≥6 black laws on table | Fascist | `fascist_laws` |
-| Government elected with Hitler as chancellor while ≥3 blacks already enacted | Fascist | `hitler_elected` |
-
-Checked at election (Hitler path) or after any enactment (law counts), including auto-enact.
+| Hitler elected chancellor with ≥3 blacks already enacted | Fascist | `hitler_elected` |
 
 ---
 
@@ -101,7 +111,7 @@ Defaults on `Settings` today:
 
 - `bar_previous_chancellor = True`
 - `bar_previous_president = False`
-- `clear_term_limits_on_auto_enact = True` (after auto-enact, previous chancellor bar clears)
-- `voting_window_seconds = 10` (engine field; UI uses its own `SECONDS_PER_VOTER = 10` for pass-and-play timers)
+- `clear_term_limits_on_auto_enact = True`
+- `voting_window_seconds = 10` (engine field; v1 UI uses `SECONDS_PER_VOTER = 10`)
 
-Player `is_alive` exists but is unused in v1 (reserved for future eliminations).
+Player `is_alive` exists but is unused in current play (reserved for future eliminations).

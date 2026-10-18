@@ -2,7 +2,7 @@
 
 **Kind:** feature  
 **Status:** proposed  
-**Depends on:** accounts auth (**shipped**); preferably after `03` multi-device is stable  
+**Depends on:** accounts auth (**shipped**); multi-device Option A (**shipped**) — prefer after identity-at-seat is already proven  
 **Priority:** last — after `04` / `05` unless human promotes earlier
 
 ## Goal
@@ -34,7 +34,7 @@ Convenience and fewer passwords for internet play. Explicitly deferred so v2 can
 
 ## Notes for implementers
 
-- Depends on shipped `01` cookie sessions and user ids.
-- Prefer after `03` so seat-binding identity is already proven with local accounts.
+- Depends on shipped cookie sessions and user ids.
+- Seat-binding identity is already proven with local accounts (shipped rooms / Option A).
 - Likely touch: `api/auth/routes.py` (add Google), `api/db.py` (nullable `google_sub`), frontend Account UI “Continue with Google”; env `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 - Full file map can be expanded when this plan is promoted to `ready`.
