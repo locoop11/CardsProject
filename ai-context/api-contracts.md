@@ -98,6 +98,93 @@ Requires valid session cookie.
 
 **Errors:** `400` bad input; `401` not authenticated.
 
+`card_skin` remains the **table preset** (laws / backs / unequipped seats). Per-player Hitler and role equip live under `/api/skins/*` (below), not on `UserOut`.
+
+---
+
+## Skins (ownership and Hitler / role equip)
+
+Image **bytes** are not in SQLite. Pack `code` maps to `frontend/public/cards/<code>/`. Guests have no ownership API.
+
+### `GET /api/skins/packs`
+
+Active catalog. Session **optional**.
+
+**Response `200` — `SkinPackOut[]`**
+
+```json
+[
+  {
+    "id": "spk_default",
+    "code": "default",
+    "title": "Classic poker",
+    "description": "…"
+  }
+]
+```
+
+---
+
+### `GET /api/skins/me`
+
+Requires session.
+
+**Response `200` — `SkinMeOut`**
+
+```json
+{
+  "owned_packs": [ /* SkinPackOut */ ],
+  "equip": {
+    "hitler_pack_id": null,
+    "role_pack_id": null,
+    "hitler_pack_code": null,
+    "role_pack_code": null
+  }
+}
+```
+
+Unequipped slots are `null` (client falls back to table `card_skin`).
+
+**Errors:** `401` not authenticated.
+
+---
+
+### `PATCH /api/skins/equip`
+
+Requires session. Body must include at least one of `hitler_pack_id` / `role_pack_id` (pack **ids**, not folder codes alone). Omitted slots stay unchanged.
+
+**Body:** `{ "hitler_pack_id"?, "role_pack_id"? }`
+
+**Response `200` — `EquipOut`** (same shape as `SkinMeOut.equip`).
+
+**Errors:** `400` empty body / unknown or inactive pack; `403` pack not owned; `401` not authenticated.
+
+---
+
+### `GET /api/skins/games/{game_id}/seats`
+
+Requires session. Caller must be **bound** to a seat in that game. Bound games only (local pass-and-play → `400`).
+
+Returns non-sensitive equipped pack ids/codes per seat so clients can render other seats’ face art on reveal/win. **Does not** include role, team, `user_id`, or ownership lists.
+
+**Response `200` — `SeatEquipsOut`**
+
+```json
+{
+  "seats": [
+    {
+      "player_id": "p0",
+      "hitler_pack_id": "spk_party",
+      "hitler_pack_code": "party",
+      "role_pack_id": "spk_default",
+      "role_pack_code": "default"
+    }
+  ]
+}
+```
+
+**Errors:** `400` local (unbound) game; `401` not authenticated; `403` caller not bound to the game; `404` unknown `game_id`.
+
 ---
 
 ## Rooms (multi-device lobby)
@@ -297,7 +384,38 @@ Drop in-memory game session (bindings die with it).
 { "id": "…", "username": "ada", "email": null, "display_name": "Ada", "card_skin": "default" }
 ```
 
-`card_skin`: `"default"` \| `"party"`.
+`card_skin`: `"default"` \| `"party"` — whole-table preset only (laws / backs / fallback).
+
+### `SkinPackOut`
+
+```json
+{ "id": "spk_default", "code": "default", "title": "Classic poker", "description": null }
+```
+
+### `EquipOut` / equip fields on `SkinMeOut`
+
+```json
+{
+  "hitler_pack_id": "spk_party",
+  "role_pack_id": "spk_default",
+  "hitler_pack_code": "party",
+  "role_pack_code": "default"
+}
+```
+
+Any field may be `null` when that slot is unequipped.
+
+### `SeatEquipOut`
+
+```json
+{
+  "player_id": "p0",
+  "hitler_pack_id": null,
+  "hitler_pack_code": null,
+  "role_pack_id": null,
+  "role_pack_code": null
+}
+```
 
 ### `RoomSeatOut`
 

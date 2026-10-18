@@ -12,6 +12,8 @@ type Props = {
   onCardSkinChange: (skin: CardSkinId) => void
   onBack: () => void
   error?: string | null
+  /** Signed-in pass-and-play: personal Hitler/role art is not this preset. */
+  signedIn?: boolean
 }
 
 export function SkinScreen({
@@ -19,6 +21,7 @@ export function SkinScreen({
   onCardSkinChange,
   onBack,
   error = null,
+  signedIn = false,
 }: Props) {
   return (
     <main className="screen settings-screen settings-hub">
@@ -36,8 +39,17 @@ export function SkinScreen({
       <div className="settings-hub-options">
         <div className="settings-hub-options-inner">
           <p className="lede">
-            One whole preset for the table — Hitler, roles, and laws.
+            {signedIn
+              ? 'Table preset for laws, card backs, and any seat that is not using your Hitler or role art.'
+              : 'One whole preset for the table — Hitler, roles, and laws.'}
           </p>
+          {signedIn && (
+            <p className="hint">
+              On a shared device, your Hitler and role art apply only to a seat
+              whose name matches your display name. Other seats use this
+              preset. Online, each player's seat uses their own art.
+            </p>
+          )}
 
           <section className="settings-block" aria-label="Card set presets">
             <div className="skin-grid" role="radiogroup" aria-label="Card skin">

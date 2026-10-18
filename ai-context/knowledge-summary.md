@@ -5,20 +5,22 @@ Secret Cards = social deduction game with **v1 pass-and-play** and **v2 multi-de
 ## Stack & runtime
 
 - Engine/API: Python, FastAPI, Pydantic, Uvicorn `:8000`, bcrypt
-- Accounts: SQLite `users` / `sessions`; cookie `session_id`
-- Games + rooms: process-local only — restart clears play/lobbies; accounts persist
+- Accounts + skins: SQLite `users` / `sessions` / `skin_packs` / `user_skin_packs` / `user_equip`; cookie `session_id`
+- Games + rooms: process-local only — restart clears play/lobbies; accounts + skin metadata persist
 - UI: React 19, TypeScript, Vite `:5173` (`credentials: 'include'`)
-- Tests: pytest (game, auth, rooms, Option A privacy, seat layout); oxlint
+- Tests: pytest (game, auth, skins, rooms, Option A privacy, seat layout); oxlint
 
 ## Backend ownership
 
 - `cards/`: generic piles/tables
 - `secret_cards/`: `GameState`, roles, laws (11 black / 6 red), engine, privacy views
-- `api/`: game routes + dual-mode `authz`; auth layered repository; `rooms/` lobby; `GameSession.user_id_by_player_id` (`None` = local)
+- `api/`: game routes + dual-mode `authz`; auth layered repository; `skins/` ownership/equip; `rooms/` lobby; `GameSession.user_id_by_player_id` (`None` = local)
 
 ## API (essentials)
 
-**Auth:** register/login/logout/me/PATCH — cookie session; password min 6; `409` duplicates; `401` bad login.
+**Auth:** register/login/logout/me/PATCH — cookie session; password min 6; `409` duplicates; `401` bad login. Register grants starter packs `default` + `party`.
+
+**Skins (session for me/equip/seats; packs catalog optional):** `GET /api/skins/packs`, `GET /api/skins/me`, `PATCH /api/skins/equip`, `GET /api/skins/games/{id}/seats` (bound only; no roles). `User.card_skin` stays table preset.
 
 **Rooms (session required):** create / join-by-code / get / claim seat / host start → `{game_id, view}` **no** `role_reveal`.
 
@@ -26,7 +28,7 @@ Secret Cards = social deduction game with **v1 pass-and-play** and **v2 multi-de
 
 ## Frontend ownership
 
-Steps: **login** → hub/account → **settings (v1)** or **onlineLobby (v2)** → gameplay. Guest → v1 only. Catalog: v1 + v2 available. Online: resolve own seat, poll ~1.5s, self-only actions. `seatLayout.rotatePlayersForViewer` bottom-anchors “me” (display-only). `cardSkin` account-persisted when signed in.
+Steps: **login** → hub/account → **settings (v1)** or **onlineLobby (v2)** → gameplay. Guest → v1 only. Catalog: v1 + v2 available. Online: resolve own seat, poll ~1.5s, self-only actions. `seatLayout.rotatePlayersForViewer` bottom-anchors “me” (display-only). Table `cardSkin` account-persisted; Account equips Hitler/role; pass-and-play personalizes name-matched seats; online loads seat equips.
 
 ## Game rules (compressed)
 
@@ -39,8 +41,8 @@ Steps: **login** → hub/account → **settings (v1)** or **onlineLobby (v2)** �
 
 - Rules in `secret_cards.engine.*` only
 - Option A: do not lock local games behind auth; do not leak other seats’ secrets
-- Auth: no SQL in service/routes; no HTTP in repository
+- Auth / skins: no SQL in service/routes; no HTTP in repository
 - Rooms: ephemeral; bindings on game session
 - `cards` must not import `secret_cards`
-- Card UI: resolve helpers only; seat rotation never authoritative on the wire
-- Contracts: `api-contracts.md`; maps: `backend-map.md` / `frontend-map.md`; rationale: `decisions.md`; backlog: `plans/` (`04`+)
+- Card UI: resolve helpers only; seat rotation never authoritative on the wire; laws/backs = table preset
+- Contracts: `api-contracts.md`; maps: `backend-map.md` / `frontend-map.md`; rationale: `decisions.md`; backlog: `plans/` (`04` not fully closed — see plan status; then `05` / `06`)

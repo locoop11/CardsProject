@@ -99,7 +99,7 @@ Ready plans include a **Developer starting point**: suggested order, files to cr
 | File | Concern | Status |
 |------|---------|--------|
 | `00-data-entities.md` | **Reference:** what we store, tiers A–D, field-level entities | locked catalog (not a build ticket) |
-| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs + equip | **ready — next** |
+| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs + equip | **implemented — not fully completed** (no full human test yet; seems good to advance) |
 | `05-hybrid-table-phone-local.md` | v3 hybrid table phone + personal phones | proposed — deferred |
 | `06-google-oauth.md` | Google / social login | proposed — **last** |
 | `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
@@ -112,9 +112,15 @@ Ready plans include a **Developer starting point**: suggested order, files to cr
 | `02-seat-layout-anchor.md` | Mid-bottom seats, `seatLayout.ts` / `rotatePlayersForViewer`, `tests/frontend/test_seat_layout.py` |
 | `03-multi-device-privacy.md` | Rooms lobby, seat bindings, Option A authz, online UI + `tests/api/test_rooms.py` / `test_privacy_option_a.py` |
 
+**In code but plan file kept open** (do not treat as fully closed):
+
+| Plan | Notes |
+|------|-------|
+| `04-per-player-owned-skins.md` | API + UI landed; pytest + light browser smoke OK. **Not fully human-tested.** Living maps updated. OK to advance to other work; close/remove `04` only after a fuller human pass. |
+
 **Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive.
 
-**Execute order (remaining):** `04` → then promote `05` / `06` when the human chooses.
+**Execute order (remaining):** finish human verification of `04` when convenient → then promote `05` / `06` when the human chooses. Advancing past `04` is allowed with the caveat above.
 
 ## Standing structure rule (platform, games, persistence)
 
@@ -136,7 +142,7 @@ This repo will host **more than one game**. Organize so shared shell and per-gam
 
 | Kind | Lives in | Examples |
 |------|----------|----------|
-| **Platform (shared)** | `api/auth/`, `api/db.py`, accounts, future shared lobby helpers; frontend shell (`Login`, `GamesHub`, account) | Identity, session cookies, hub catalog |
+| **Platform (shared)** | `api/auth/`, `api/skins/`, `api/db.py`, accounts, future shared lobby helpers; frontend shell (`Login`, `GamesHub`, account) | Identity, session cookies, skin ownership/equip, hub catalog |
 | **Game domain** | One Python package per game (today: `secret_cards/`) | Rules, phases, wins — never in FastAPI routes |
 | **Generic card primitives** | `cards/` only | Piles/tables; **no** game rules; reusable by every game |
 | **Game HTTP** | Dedicated router module per game (today: `api/routes.py` for Secret Cards) | Thin: validate → call engine → map errors → JSON |

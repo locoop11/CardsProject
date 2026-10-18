@@ -19,7 +19,7 @@ The product shell is **login-first**:
 
 | Term | Meaning |
 |------|---------|
-| **Account** | Durable player identity with display name and preferred card skin |
+| **Account** | Durable player identity with display name, table card-skin preset, and owned/equipped Hitler–role packs |
 | **Guest** | Explicit no-account mode; v1 only |
 | **Games hub** | Signed-in landing place listing available modes |
 | **Room** | Multi-device lobby with a join code until the host starts |
@@ -35,7 +35,9 @@ The product shell is **login-first**:
 | **Nomination / Voting / Legislative** | Round phases |
 | **Top enact / auto-enact** | Top deck law when no eligible nominee remains |
 | **Term limit** | Previous chancellor barred by default next round |
-| **Card skin** | Whole-table art pack (`default` or `party`) |
+| **Card skin (table preset)** | Whole-table art pack for laws, backs, and unequipped seats (`default` or `party`) |
+| **Skin pack** | Owned art set (`default`, `party`, …) — grantable; not a single PNG |
+| **Equip (Hitler / role)** | Which owned pack a player applies to Hitler vs role faces; laws stay on the table preset |
 
 ---
 
@@ -45,7 +47,7 @@ The product shell is **login-first**:
 |-------|--------|
 | Unauthenticated visitor | Login / register; Play as guest |
 | Guest | Secret Cards v1 only; leave → Login |
-| Signed-in account | Games hub; Account; v1 with saved skin; **v2** host/join/claim/play |
+| Signed-in account | Games hub; Account (display name + Hitler/role equip); v1 with saved table skin; **v2** host/join/claim/play |
 
 ---
 

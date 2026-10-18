@@ -138,9 +138,13 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 **Registered packs:** `default`, `party`. Party generic `back.png` matches `default/back.png`.
 
-**Account skin:** Signed-in `User.card_skin` is whole-table preset; guests client-only.
+**Table preset:** Signed-in `User.card_skin` is whole-table preset for laws, backs, and unequipped seats; guests client-only.
 
-**Deferred:** Per-player owned / mixed packs — `plans/04-per-player-owned-skins.md`.
+**Per-player Hitler / role (plan `04`, in code):** Ownership via `user_skin_packs`; equip via `user_equip` slots `hitler` / `role` for `game_slug=secret-cards`. HTTP under `/api/skins/*`. Pack folder key is DB column `code` (entity catalog may still say `slug`). No `CardAsset` rows yet — resolve via pack `code` + `cardAssets.ts`. Laws stay table preset.
+
+**Status:** Implemented and covered by API tests + light browser smoke; **not fully human-tested**. Plan file kept open until a full human pass. See `plans/04-per-player-owned-skins.md`.
+
+**Still deferred:** Storefront / law packs / custom uploads / `CardAsset*` tables.
 
 ---
 

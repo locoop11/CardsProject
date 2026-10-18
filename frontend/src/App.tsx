@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiError, createGame, deleteGame, updateMe } from './api/client'
-import type { PublicView, RoleRevealPlayer, User } from './api/types'
+import { ApiError, createGame, deleteGame, getSeatEquips, getSkinMe, updateMe } from './api/client'
+import type { PublicView, RoleRevealPlayer, SkinEquip, User } from './api/types'
 import { loadMe } from './auth'
 import {
   asCardSkinId,
@@ -10,8 +10,11 @@ import {
 import type { SupportedPlayerCount } from './constants'
 import {
   mergeView,
+  seatArtForNamedAccount,
+  seatArtFromSeatEquips,
   sessionFromView,
   type GameSession,
+  type SeatArt,
   type WinResult,
 } from './gameSession'
 import { resolvePlayerNames } from './names'
@@ -61,6 +64,9 @@ export default function App() {
   const [playerCount, setPlayerCount] = useState<SupportedPlayerCount>(5)
   const [names, setNames] = useState<string[]>(() => emptyNames(5))
   const [cardSkin, setCardSkin] = useState<CardSkinId>(DEFAULT_CARD_SKIN)
+  const [hitlerSkin, setHitlerSkin] = useState<CardSkinId | null>(null)
+  const [roleSkin, setRoleSkin] = useState<CardSkinId | null>(null)
+  const [seatArt, setSeatArt] = useState<Map<string, SeatArt>>(() => new Map())
   const [user, setUser] = useState<User | null>(null)
   const [roleReveal, setRoleReveal] = useState<RoleRevealPlayer[]>([])
   const [session, setSession] = useState<GameSession | null>(null)
@@ -82,10 +88,15 @@ export default function App() {
     if (skin) setCardSkin(skin)
   }, [])
 
+  const applyEquip = useCallback((equip: SkinEquip) => {
+    setHitlerSkin(asCardSkinId(equip.hitler_pack_code))
+    setRoleSkin(asCardSkinId(equip.role_pack_code))
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     void loadMe()
-      .then((me) => {
+      .then(async (me) => {
         if (cancelled) return
         applyUser(me)
         setAuthWarning(null)
@@ -93,6 +104,12 @@ export default function App() {
         if (me) {
           setPlayMode('account')
           setStep('gamesHub')
+          try {
+            const skins = await getSkinMe()
+            if (!cancelled) applyEquip(skins.equip)
+          } catch {
+            // Missing equip falls back to the table preset.
+          }
         } else {
           setPlayMode(null)
           setStep('login')
@@ -110,7 +127,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [applyUser])
+  }, [applyUser, applyEquip])
 
   const handleSessionChange = useCallback((next: GameSession) => {
     setSession(next)
@@ -124,6 +141,9 @@ export default function App() {
     setSkinError(null)
     setAuthWarning(null)
     setCardSkin(DEFAULT_CARD_SKIN)
+    setHitlerSkin(null)
+    setRoleSkin(null)
+    setSeatArt(new Map())
     setStep('login')
   }
 
@@ -134,6 +154,9 @@ export default function App() {
     setError(null)
     setSkinError(null)
     setCardSkin(DEFAULT_CARD_SKIN)
+    setHitlerSkin(null)
+    setRoleSkin(null)
+    setSeatArt(new Map())
     setStep('settings')
   }
 
@@ -203,8 +226,18 @@ export default function App() {
           { role: p.role, team: p.team },
         ]),
       )
+      const art =
+        playMode === 'account' && user
+          ? seatArtForNamedAccount(
+              created.role_reveal,
+              user.display_name,
+              hitlerSkin,
+              roleSkin,
+            )
+          : new Map<string, SeatArt>()
+      setSeatArt(art)
       setRoleReveal(created.role_reveal)
-      setSession(sessionFromView(created.view, rolesById))
+      setSession(sessionFromView(created.view, rolesById, art))
       setStep('roleReveal')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start game')
@@ -269,13 +302,21 @@ export default function App() {
       const rolesById = new Map([
         [own.id, { role: own.role, team: own.team }],
       ])
+      let art = new Map<string, SeatArt>()
+      try {
+        const seats = await getSeatEquips(payload.gameId)
+        art = seatArtFromSeatEquips(seats.seats)
+      } catch {
+        // Table preset covers seats when equip cannot be loaded.
+      }
       setOnlinePlay({
         gameId: payload.gameId,
         selfPlayerId,
         roomId: payload.roomId,
       })
+      setSeatArt(art)
       setRoleReveal([own])
-      setSession(sessionFromView(payload.view, rolesById))
+      setSession(sessionFromView(payload.view, rolesById, art))
       setStep('roleReveal')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to enter online game')
@@ -366,6 +407,7 @@ export default function App() {
       <RoleRevealScreen
         players={roleReveal}
         cardSkin={cardSkin}
+        seatArt={seatArt}
         onBackToHub={() =>
           void (onlinePlay ? leaveOnlineToHub() : returnToV1Settings())
         }
@@ -410,6 +452,7 @@ export default function App() {
           setSettingsPanel('hub')
         }}
         error={skinError}
+        signedIn={playMode === 'account'}
       />
     )
   }
@@ -441,6 +484,7 @@ export default function App() {
       <AccountScreen
         user={user}
         onUserChange={(next) => applyUser(next)}
+        onEquipChange={applyEquip}
         onLoggedOut={goToLogin}
         onBack={() => setStep('gamesHub')}
       />

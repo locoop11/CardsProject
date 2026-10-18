@@ -1,5 +1,5 @@
 import type { LawCardDto, PublicView } from './api/types'
-import type { CardSkinId } from './cardAssets'
+import { asCardSkinId, type CardSkinId } from './cardAssets'
 import type { Role, Team } from './roles'
 
 /** Seconds each player gets to cast Ja/Nein during pass-and-play voting. */
@@ -8,16 +8,27 @@ export const RED_WIN = 5
 export const BLACK_WIN = 6
 export const HITLER_ZONE_BLACKS = 3
 
+export type SeatArt = {
+  /** Hitler face pack. Unset falls back to cardSkin, then the table preset. */
+  hitlerSkin?: CardSkinId
+  /** Communist/fascist face pack. Unset falls back to cardSkin, then the table preset. */
+  roleSkin?: CardSkinId
+  /** Optional single-pack override kept for older call sites. */
+  cardSkin?: CardSkinId
+}
+
 export type TablePlayer = {
   id: string
   name: string
   role?: Role
   team?: Team
   /**
-   * Optional seat role-card art pack. Frontend-only for now; when unset,
-   * seats use the table skin. Future: profile / lobby picker or API field.
+   * Optional single-pack seat override. Hitler/role equip uses the fields
+   * below; when those are unset, seats use this override or the table skin.
    */
   cardSkin?: CardSkinId
+  hitlerSkin?: CardSkinId
+  roleSkin?: CardSkinId
 }
 
 export type WinResult = {
@@ -50,18 +61,21 @@ export type GameSession = {
 export function sessionFromView(
   view: PublicView,
   rolesById?: Map<string, { role: Role; team: Team }>,
-  skinsById?: Map<string, CardSkinId>,
+  artById?: Map<string, SeatArt>,
 ): GameSession {
   return {
     gameId: view.game_id,
     players: view.players.map((p) => {
       const roleInfo = rolesById?.get(p.id)
+      const art = artById?.get(p.id)
       return {
         id: p.id,
         name: p.name,
         role: roleInfo?.role,
         team: roleInfo?.team,
-        cardSkin: skinsById?.get(p.id),
+        cardSkin: art?.cardSkin,
+        hitlerSkin: art?.hitlerSkin,
+        roleSkin: art?.roleSkin,
       }
     }),
     presidentIndex: view.president_index,
@@ -87,12 +101,61 @@ export function mergeView(
       .filter((p) => p.role && p.team)
       .map((p) => [p.id, { role: p.role!, team: p.team! }]),
   )
-  const skinsById = new Map(
-    session.players
-      .filter((p) => p.cardSkin)
-      .map((p) => [p.id, p.cardSkin!]),
-  )
-  return sessionFromView(view, rolesById, skinsById)
+  const artById = new Map<string, SeatArt>()
+  for (const player of session.players) {
+    if (!player.hitlerSkin && !player.roleSkin && !player.cardSkin) continue
+    artById.set(player.id, {
+      hitlerSkin: player.hitlerSkin,
+      roleSkin: player.roleSkin,
+      cardSkin: player.cardSkin,
+    })
+  }
+  return sessionFromView(view, rolesById, artById)
+}
+
+/**
+ * Shared-device seats whose typed name matches the account display name
+ * use that account's Hitler/role packs. Every other seat stays unset so
+ * the table preset applies.
+ */
+export function seatArtForNamedAccount(
+  players: Array<{ id: string; name: string }>,
+  displayName: string,
+  hitlerSkin: CardSkinId | null,
+  roleSkin: CardSkinId | null,
+): Map<string, SeatArt> {
+  const artById = new Map<string, SeatArt>()
+  const target = displayName.trim()
+  if (!target || (!hitlerSkin && !roleSkin)) return artById
+  for (const player of players) {
+    if (player.name !== target) continue
+    const art: SeatArt = {}
+    if (hitlerSkin) art.hitlerSkin = hitlerSkin
+    if (roleSkin) art.roleSkin = roleSkin
+    artById.set(player.id, art)
+  }
+  return artById
+}
+
+/** Online seat payload → art map. Unknown pack codes are ignored (table fallback). */
+export function seatArtFromSeatEquips(
+  seats: Array<{
+    player_id: string
+    hitler_pack_code: string | null
+    role_pack_code: string | null
+  }>,
+): Map<string, SeatArt> {
+  const artById = new Map<string, SeatArt>()
+  for (const seat of seats) {
+    const hitlerSkin = asCardSkinId(seat.hitler_pack_code)
+    const roleSkin = asCardSkinId(seat.role_pack_code)
+    if (!hitlerSkin && !roleSkin) continue
+    const art: SeatArt = {}
+    if (hitlerSkin) art.hitlerSkin = hitlerSkin
+    if (roleSkin) art.roleSkin = roleSkin
+    artById.set(seat.player_id, art)
+  }
+  return artById
 }
 
 export function president(session: GameSession): TablePlayer {

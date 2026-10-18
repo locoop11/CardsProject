@@ -16,11 +16,11 @@ The app shell is **login-first**. Guests play **v1 only**. Signed-in users land 
 | Game rules / state | Python 3, dataclasses, enums |
 | Generic card primitives | `cards/` package |
 | HTTP transport | FastAPI + Pydantic, Uvicorn (`:8000`) |
-| Accounts persistence | SQLite (`users`, `sessions`); path `data/secret_cards.db` or `SECRET_CARDS_DB` |
+| Accounts + skins persistence | SQLite (`users`, `sessions`, `skin_packs`, `user_skin_packs`, `user_equip`); path `data/secret_cards.db` or `SECRET_CARDS_DB` |
 | Password hashing | bcrypt |
 | Games + rooms | Process-local memory only (no durable game/room DB) |
 | UI | React 19 + TypeScript, Vite 8 (`:5173`) |
-| Tests | pytest (engine + API + auth + rooms + privacy + seat layout); oxlint on frontend |
+| Tests | pytest (engine + API + auth + skins + rooms + privacy + seat layout); oxlint on frontend |
 
 ## Structural layers
 
@@ -34,7 +34,7 @@ Platform (shared) vs game:
 
 | Kind | Location | Owns |
 |------|----------|------|
-| Platform | `api/auth/`, `api/db.py`; frontend shell (`Login`, `GamesHub`, `Account`) | Identity, cookies, hub catalog |
+| Platform | `api/auth/`, `api/skins/`, `api/db.py`; frontend shell (`Login`, `GamesHub`, `Account`) | Identity, cookies, skin ownership/equip, hub catalog |
 | Lobby (ephemeral) | `api/rooms/`, `api/authz.py` | Room create/join/claim/start; seat-binding checks |
 | Game domain | `secret_cards/` | Rules, phases, wins |
 | Card primitives | `cards/` | Piles/tables; no game rules |
@@ -43,7 +43,7 @@ Platform (shared) vs game:
 
 - **`cards/`** — reusable primitives. Must never import `secret_cards`.
 - **`secret_cards/`** — full game domain. No HTTP, accounts, or rooms.
-- **`api/`** — FastAPI: auth (SQLite), rooms (memory), games (memory + optional seat bindings).
+- **`api/`** — FastAPI: auth + skins (SQLite), rooms (memory), games (memory + optional seat bindings).
 - **`frontend/`** — login-first shell, hub, v1 and v2 UX. Calls `/api/*` via Vite proxy.
 
 ## Communication model
@@ -56,12 +56,13 @@ Platform (shared) vs game:
    - **Local** (`user_id_by_player_id is None`): cookie-optional — guest v1 and pytest.
    - **Bound** (multi-device start): cookie required for secrets and actor mutations; seat must match or `403`.
 6. **Rooms** (`/api/rooms*`): session required; host/join/claim/start. Start returns `game_id` + `view` only (**no** full `role_reveal`).
-7. **Privacy:** never raw `GameState`. Public views omit roles/deck/hands. Bound clients get only their seat’s role (and hand when office holder). Local create still returns pass-and-play `role_reveal`.
+7. **Skins** (`/api/skins*`): catalog optional auth; me/equip require session; bound-game seat equips require caller bound (no roles in payload).
+8. **Privacy:** never raw `GameState`. Public views omit roles/deck/hands. Bound clients get only their seat’s role (and hand when office holder). Local create still returns pass-and-play `role_reveal`.
 
 ## Runtime topology
 
-- Uvicorn lifespan calls `init_db()` (accounts tables).
-- Process holds **games** (`api.session.store`) and **rooms** (`api.rooms.store`). Restart clears both; accounts survive in SQLite.
+- Uvicorn lifespan calls `init_db()` (accounts + skin tables, seed packs, ownership backfill).
+- Process holds **games** (`api.session.store`) and **rooms** (`api.rooms.store`). Restart clears both; accounts and skin metadata survive in SQLite.
 - Bound games attach `player_id → user_id` on the in-memory `GameSession` for the game’s lifetime.
 - Frontend owns UI step state; engine owns authoritative phase and rules.
 

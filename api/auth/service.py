@@ -20,6 +20,7 @@ from api.auth.repository import (
     update_user_profile,
 )
 from api.db import ALLOWED_CARD_SKINS, DEFAULT_CARD_SKIN
+from api.skins.service import grant_starter_packs
 
 SESSION_COOKIE_NAME = "session_id"
 SESSION_TTL = timedelta(days=30)
@@ -125,6 +126,11 @@ def register(
                 display_name=name,
                 card_skin=DEFAULT_CARD_SKIN,
                 created_at=now_iso,
+            )
+            grant_starter_packs(
+                conn,
+                user_id=user_id,
+                acquired_at=now_iso,
             )
             insert_session(
                 conn,

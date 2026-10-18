@@ -158,9 +158,10 @@ export function resolveRole(
   skinId: CardSkinId,
   role: Role,
   sameRoleIndex = 0,
+  hitlerSkinId?: CardSkinId,
 ): string {
   if (role === 'hitler') {
-    return resolveHitler(skinId)
+    return resolveHitler(hitlerSkinId ?? skinId)
   }
   const meta = SKINS[skinId]
   if (role === 'fascist' && meta.roleFascistFile) {

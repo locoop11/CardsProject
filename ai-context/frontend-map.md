@@ -6,7 +6,7 @@
 
 `login` → (`gamesHub` | `account` when signed in) → (`settings` for v1 | `onlineLobby` for v2) → (`roleReveal` v1 only) → `nomination` ↔ `legislative` → `win`
 
-Boot: `loadMe()` → if session, `playMode=account` and step `gamesHub`; else step `login`. Non-401 `/me` failure → login with warning; guest still available.
+Boot: `loadMe()` → if session, `playMode=account` and step `gamesHub`, then load `GET /api/skins/me` for Hitler/role equip; else step `login`. Non-401 `/me` failure → login with warning; guest still available.
 
 **Play mode** (`guest` | `account`) is frontend-only. Guests cannot open Games hub or v2.
 
@@ -16,7 +16,8 @@ Within `settings` (v1 only), panel sub-state:
 
 - Leaving v1 settings: account → Games hub; guest → Login.
 - v2: Games hub → `onlineLobby` (host/join/claim/start) → online gameplay (no shared `roleReveal` step).
-- Whole-table `cardSkin`: accounts seed from `user.card_skin` and PATCH on change; guests client-only.
+- Whole-table `cardSkin`: accounts seed from `user.card_skin` and PATCH on change; guests client-only. Laws and card backs always use this preset.
+- Per-player Hitler/role: signed-in equip from Account (`/api/skins/*`). Pass-and-play applies that art only to seats whose typed name matches the account display name; other seats use the table preset. Online: `GET /api/skins/games/{gameId}/seats` → per-seat art on the session.
 
 ---
 
@@ -26,12 +27,12 @@ Within `settings` (v1 only), panel sub-state:
 |--------|----------------|
 | `LoginScreen` | First page: login / register + **Play as guest** |
 | `GamesHubScreen` | Signed-in catalog (v1 + v2 available); open Account |
-| `AccountScreen` | Display name PATCH, logout → login |
+| `AccountScreen` | Display name PATCH; Hitler/role equip from owned packs; logout → login |
 | `OnlineLobbyScreen` | Host create / join by code / claim seats / host start |
 | `SettingsHubScreen` (`SettingsScreen.tsx`) | v1 pre-game hub: count, Names/Skin, start |
 | `NamesScreen` | Enter names; blanks → `Player N` |
-| `SkinScreen` | Whole-table pack (`default` \| `party`) |
-| `RoleRevealScreen` | **v1 only** — pass-and-play roles in entry order |
+| `SkinScreen` | Whole-table pack (`default` \| `party`); signed-in copy notes laws/backs + unequipped seats |
+| `RoleRevealScreen` | **v1 only** — pass-and-play roles in entry order; optional per-seat `seatArt` |
 | `NominationScreen` | Nominate / vote / resolve; online: self-only + poll |
 | `LegislativeScreen` | Discard / enact; online: office-holder only + poll |
 | `WinScreen` | Winner / roles; play again → v1 settings or leave online → hub |
@@ -46,19 +47,19 @@ Within `settings` (v1 only), panel sub-state:
 
 - `playMode`, `user`, `authStatus`, `authWarning`
 - `onlinePlay` (`gameId`, `selfPlayerId`, `roomId`) when in v2
-- `playerCount`, `names`, `cardSkin`, `settingsPanel`
+- `playerCount`, `names`, `cardSkin`, `hitlerSkin`, `roleSkin`, `seatArt`, `settingsPanel`
 - `roleReveal` (v1), `session`, `chancellorId`, `win`, `busy`, `error`, `skinError`
 - `legislativeKey` — remount legislative each government
 
 ### Session model (`gameSession.ts`)
 
-`GameSession` mirrors `PublicView` (+ optional client role / per-seat skin fields).
+`GameSession` mirrors `PublicView` (+ optional client role / per-seat art: `hitlerSkin`, `roleSkin`, `cardSkin`).
 
-- Helpers: `sessionFromView`, `mergeView`, `winFromView`, `president`, `playerById`
+- Helpers: `sessionFromView`, `mergeView`, `winFromView`, `president`, `playerById`, `seatArtForNamedAccount`, `seatArtFromSeatEquips`
 - Constants: `SECONDS_PER_VOTER = 10`, UI win thresholds
 
-v1: roles from create `role_reveal`, kept via `mergeView`.  
-v2: own role from authorized `GET .../role/{self}` only.
+v1: roles from create `role_reveal`, kept via `mergeView`; seat art from display-name match when signed in.  
+v2: own role from authorized `GET .../role/{self}` only; seat art from skins seat-equip endpoint.
 
 ### Online helpers
 
@@ -79,8 +80,8 @@ v2: own role from authorized `GET .../role/{self}` only.
 
 | Module | Role |
 |--------|------|
-| `api/client.ts` | `credentials: 'include'`; game + auth + room helpers; `ApiError` |
-| `api/types.ts` | DTOs (`PublicView`, `User`, `Room`, `StartRoomResponse`, …) |
+| `api/client.ts` | `credentials: 'include'`; game + auth + room + skins helpers; `ApiError` |
+| `api/types.ts` | DTOs (`PublicView`, `User`, `Room`, `SkinProfile`, `SeatEquipsResponse`, …) |
 | `auth.ts` | `loadMe()` — user or `null` on 401 |
 | `gameCatalog.ts` | `secret-cards-v1` + `secret-cards-v2` both `available: true` |
 
@@ -98,7 +99,8 @@ Vite proxies `/api` and `/health` to port 8000.
 
 **Option A catalogs** per pack: Hitler, Role, Law. Screens use helpers only:
 
-- `resolveHitler` / `resolveRole` / `resolveLaw` / `cardBackSrc` / optional `cardTeamBackSrc`
+- `resolveHitler` / `resolveRole` (optional separate Hitler pack) / `resolveLaw` / `cardBackSrc` / optional `cardTeamBackSrc`
+- Face-down backs stay on the **table** `cardSkin`; faces may use per-seat Hitler/role packs.
 
 | Pack id | Label | Notes |
 |---------|--------|--------|

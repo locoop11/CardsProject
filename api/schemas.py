@@ -165,3 +165,44 @@ class StartRoomResponse(BaseModel):
 
     game_id: str
     view: PublicViewOut
+
+
+# --- Skins (ownership and equip; image bytes stay on disk) ---
+
+
+class SkinPackOut(BaseModel):
+    id: str
+    code: str
+    title: str
+    description: Optional[str] = None
+
+
+class EquipOut(BaseModel):
+    hitler_pack_id: Optional[str] = None
+    role_pack_id: Optional[str] = None
+    hitler_pack_code: Optional[str] = None
+    role_pack_code: Optional[str] = None
+
+
+class SkinMeOut(BaseModel):
+    owned_packs: list[SkinPackOut]
+    equip: EquipOut
+
+
+class EquipRequest(BaseModel):
+    hitler_pack_id: Optional[str] = None
+    role_pack_id: Optional[str] = None
+
+
+class SeatEquipOut(BaseModel):
+    """Equipped pack ids for one seat. No role, team, or ownership list."""
+
+    player_id: str
+    hitler_pack_id: Optional[str] = None
+    hitler_pack_code: Optional[str] = None
+    role_pack_id: Optional[str] = None
+    role_pack_code: Optional[str] = None
+
+
+class SeatEquipsOut(BaseModel):
+    seats: list[SeatEquipOut]

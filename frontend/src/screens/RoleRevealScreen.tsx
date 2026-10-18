@@ -5,6 +5,7 @@ import {
   resolveRole,
   type CardSkinId,
 } from '../cardAssets'
+import type { SeatArt } from '../gameSession'
 import {
   roleLabel,
   teamLabel,
@@ -17,13 +18,15 @@ type Phase = 'pass' | 'revealed'
 type Props = {
   players: RoleRevealPlayer[]
   cardSkin?: CardSkinId
+  seatArt?: Map<string, SeatArt>
   onBackToHub: () => void
   onComplete: () => void
 }
 
 function assignRevealSrcs(
   players: RoleRevealPlayer[],
-  skin: CardSkinId,
+  tableSkin: CardSkinId,
+  seatArt?: Map<string, SeatArt>,
 ): Map<string, string> {
   const fascistIndex = { n: 0 }
   const communistIndex = { n: 0 }
@@ -38,7 +41,10 @@ function assignRevealSrcs(
       same = communistIndex.n
       communistIndex.n += 1
     }
-    byId.set(player.id, resolveRole(skin, role, same))
+    const art = seatArt?.get(player.id)
+    const roleSkin = art?.roleSkin ?? art?.cardSkin ?? tableSkin
+    const hitlerSkin = art?.hitlerSkin ?? art?.cardSkin ?? tableSkin
+    byId.set(player.id, resolveRole(roleSkin, role, same, hitlerSkin))
   }
   return byId
 }
@@ -46,14 +52,15 @@ function assignRevealSrcs(
 export function RoleRevealScreen({
   players,
   cardSkin = DEFAULT_CARD_SKIN,
+  seatArt,
   onBackToHub,
   onComplete,
 }: Props) {
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('pass')
   const srcById = useMemo(
-    () => assignRevealSrcs(players, cardSkin),
-    [players, cardSkin],
+    () => assignRevealSrcs(players, cardSkin, seatArt),
+    [players, cardSkin, seatArt],
   )
 
   const player = players[index]

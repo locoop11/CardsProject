@@ -6,7 +6,7 @@
 |---------|------|----------------|
 | `cards/` | Generic `Card`, `CardPile`, `CardTable`, `DeckProtocol` | Any Secret Cards rules |
 | `secret_cards/` | Game model, roles, law deck, engine, privacy views | HTTP, UI, accounts, rooms |
-| `api/` | FastAPI app, game routes, auth, rooms, authz, schemas, in-memory games/rooms, SQLite accounts | Rules logic (delegates to engine) |
+| `api/` | FastAPI app, game routes, auth, skins, rooms, authz, schemas, in-memory games/rooms, SQLite accounts + skin metadata | Rules logic (delegates to engine) |
 | `tests/` | pytest suites mirroring packages | — |
 
 ---
@@ -74,12 +74,12 @@ Public re-exports: `secret_cards/__init__.py`.
 
 | Module | Responsibility |
 |--------|----------------|
-| `app.py` | FastAPI app, CORS (credentials on), lifespan `init_db()`, mounts game + auth + rooms routers, `GET /health` |
+| `app.py` | FastAPI app, CORS (credentials on), lifespan `init_db()`, mounts game + auth + rooms + skins routers, `GET /health` |
 | `routes.py` | `/api/games*`; dual-mode authz via `api/authz`; engine → views; `ActionResponse.hand` gated for bound games |
-| `schemas.py` | Pydantic models (game + auth + rooms) |
+| `schemas.py` | Pydantic models (game + auth + rooms + skins) |
 | `session.py` | `SessionStore` / `GameSession` — process-local games; optional `user_id_by_player_id` bindings |
 | `authz.py` | Bound-seat helpers: `require_user_if_bound`, `require_bound_seat` / president / chancellor |
-| `db.py` | SQLite connect/path/`init_db`; skin allow-list constants. No auth use-cases. |
+| `db.py` | SQLite connect/path/`init_db`; seed skin packs + ownership backfill; skin allow-list constants. No use-cases. |
 
 `GameSession.is_local()` when `user_id_by_player_id is None`. Local routes stay cookie-optional; bound routes require session + matching seat.
 
@@ -95,7 +95,23 @@ Layered: **routes/deps → service → repository → db**. Never reverse.
 | `passwords.py` | Helpers | bcrypt; `MIN_PASSWORD_LENGTH = 6` |
 | `repository.py` | Data | SQL for `users` / `sessions`. **No FastAPI/cookies.** |
 
-**SQLite (accounts only):** `users`, `sessions`. Guest play has no DB row.
+**SQLite (accounts):** `users`, `sessions`. Guest play has no DB row.
+
+**Register** also grants starter skin packs via `api.skins.service.grant_starter_packs` inside the same transaction.
+
+### Skins platform (`api/skins/`)
+
+Layered: **routes → service → repository → db**. Prefer this package over stuffing cosmetics into auth.
+
+| Module | Layer | Responsibility |
+|--------|-------|----------------|
+| `routes.py` | HTTP | `/api/skins/*`; map domain errors → status codes |
+| `service.py` | Business | Grant starters; equip Hitler/role; bound-game seat equip lookup. **No SQL.** |
+| `repository.py` | Data | SQL for `skin_packs` / `user_skin_packs` / `user_equip`. **No FastAPI/cookies.** |
+
+**SQLite (skins):** `skin_packs` (`id` + unique `code`), `user_skin_packs`, `user_equip` (`game_slug` + `slot` ∈ `hitler` \| `role`). Image bytes stay on disk under `frontend/public/cards/<code>/`. No `CardAsset` rows yet.
+
+`User.card_skin` remains the **table preset** (laws / backs / fallback).
 
 ### Rooms (`api/rooms/`)
 
@@ -119,6 +135,7 @@ On start: placeholder names preserve claim↔seat through shuffle; then rewrite 
 | `tests/secret_cards/` | Engine phases, law deck, views, full-game sims |
 | `tests/api/test_api.py` | Local game HTTP (no cookie) |
 | `tests/api/test_auth.py` | Auth cookies + guest game path |
+| `tests/api/test_skins.py` | Pack grant, equip deny/happy path, `/skins/me`, bound seat equips |
 | `tests/api/test_rooms.py` | Lobby create/join/claim/start |
 | `tests/api/test_privacy_option_a.py` | Bound seat denial / hand / actors |
 | `tests/api/test_session_bindings.py` | Binding helpers on `GameSession` |

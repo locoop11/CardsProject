@@ -42,7 +42,7 @@ Single catalog of **entities**, **relationships**, and **storage tiers**. Design
 | `email` | UNIQUE, nullable, lowered |
 | `password_hash` | never client-visible |
 | `display_name` | required |
-| `card_skin` | **temporary** whole-table preset (`default` \| `party`) until `04` / equip model |
+| `card_skin` | Whole-table preset (`default` \| `party`) for laws / backs / fallback — kept after `04` until a later `table_preset` equip slot |
 | `created_at` | ISO UTC |
 
 **Ownership list:** not a JSON column on `User` in the target model. In SQL, “user owns packs” is the **`UserSkinPacks`** relationship (below). APIs may still return `owned_skin_packs: [...]` as a derived list.
@@ -69,18 +69,18 @@ Frontend `playMode` only.
 
 # Part 2 — Target durable model (organization / scalability)
 
-History remains later. **Ownership / cosmetics** are scheduled in ready plan **`04`**. Entities below are the agreed shape.
+History remains later. **Ownership / cosmetics:** core tables shipped in plan **`04`** (not fully closed — awaiting fuller human test). Optional `CardAsset*` rows remain TARGET.
 
-## Ownership & cosmetics (platform — plan `04` ready)
+## Ownership & cosmetics (platform — plan `04` in code)
 
-### `SkinPack` — TARGET → implement in `04` (tier A)
+### `SkinPack` — SHIPPED in `04` (tier A)
 
 A purchasable / grantable **set** of card art (not a single PNG).
 
 | Field | Notes |
 |-------|--------|
 | `id` | PK |
-| `slug` | unique stable id (`default`, `party`, …) |
+| `code` | unique stable folder key (`default`, `party`, …) — catalog historically said `slug`; wire/DB use **`code`** |
 | `title` | display name |
 | `description` | optional |
 | `active` | can be listed / granted |
@@ -126,7 +126,7 @@ Membership: which assets are inside a pack (composition).
 | `card_asset_id` | FK |
 | `pack_slot` | optional order / role inside the pack |
 
-### `UserSkinPacks` — TARGET (tier A) — **ownership list**
+### `UserSkinPacks` — SHIPPED in `04` (tier A) — **ownership list**
 
 Join entity: **the list of skin packs a user owns**.  
 Name locked per product preference (table/collection: `user_skin_packs`).
@@ -140,18 +140,20 @@ Name locked per product preference (table/collection: `user_skin_packs`).
 
 **Why not a column on `User`:** relational ownership scales (many packs, queries, grants, revoke). The **User** domain object still “has” `skin_packs` via this relation; HTTP can expose it as an array.
 
-### `UserEquip` — TARGET (tier A, with `04`)
+### `UserEquip` — SHIPPED in `04` for Hitler/role (tier A)
 
-What the user **currently applies** (owned packs/assets) per game/slot — separate from ownership.
+What the user **currently applies** (owned packs) per game/slot — separate from ownership.
 
 | Field | Notes |
 |-------|--------|
+| `id` | PK |
 | `user_id` | FK |
-| `game_slug` | which game the equip applies to |
-| `slot` | `hitler` \| `role` \| `law` \| `table_preset` \| … |
-| `skin_pack_id` and/or `card_asset_id` | what is equipped (finalize in `04`) |
+| `game_slug` | today: `secret-cards` |
+| `slot` | shipped: `hitler` \| `role` — `law` / `table_preset` deferred |
+| `skin_pack_id` | equipped pack (no `card_asset_id` yet) |
+| UNIQUE | (`user_id`, `game_slug`, `slot`) |
 
-Until this exists, `User.card_skin` remains the temporary whole-table preset (shipped accounts behavior).
+`User.card_skin` remains the whole-table preset for laws / backs / fallback.
 
 ---
 
@@ -259,7 +261,7 @@ Later, live play can **mirror** into `GameInstance` + append `GameAction` withou
 | Phase | Plan | Entities |
 |-------|------|----------|
 | Done | `01`–`03` (removed) | `User`, `Session`; live `Room` + bound `GameSession`; seat UI helpers |
-| Cosmetics / ownership | `04` | `SkinPack`, `CardAsset`, `SkinPackAsset`, `CardAssetGameRule`, `UserSkinPacks`, `UserEquip`; retire temp `card_skin` |
+| Cosmetics / ownership | `04` (in code; not fully closed) | Shipped: `SkinPack`, `UserSkinPacks`, `UserEquip` (hitler/role). Still TARGET: `CardAsset*`. Keep `User.card_skin` as table preset. |
 | Hybrid table-phone | `05` | no new durable entities required at plan time |
 | History / analytics | **future numbered plan** | `GameInstance`, `GameParticipant`, `GameAction` (+ retention policy) |
 | OAuth | `06` | link field/table on `User` |

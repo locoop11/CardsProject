@@ -33,7 +33,7 @@ This file does not schedule implementation. Items below stay out of the **v1 pas
 | Accounts / authentication | **Shipped** — living maps / `api/auth/` |
 | Bottom-anchor seats + rotation | **Shipped** — `seatLayout.ts`, mid-bottom `TableBoard` |
 | Multi-device Option A privacy + rooms/join | **Shipped** — `api/rooms/`, `api/authz.py`, online UI |
-| Per-player owned skin packs | `04-per-player-owned-skins.md` (**ready**) |
+| Per-player owned skin packs | `04-per-player-owned-skins.md` (**in code — not fully closed**; awaiting fuller human test) |
 | Hybrid table-phone local (v3) | `05-hybrid-table-phone-local.md` (open) |
 | Google / social OAuth | `06-google-oauth.md` (open) |
 

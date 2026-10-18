@@ -1,9 +1,16 @@
 # 04 — Per-player owned skin packs
 
 **Kind:** feature  
-**Status:** ready  
+**Status:** implemented — **not fully completed**  
 **Depends on:** accounts auth (**shipped**); multi-device optional for online seats  
-**Priority:** next product feature after shipped `01`–`03`
+**Priority:** in code; keep open until fuller human verification  
+
+### Completion note (human)
+
+- Implementation is in the repo (schema, `api/skins/`, Account equip UI, seat art wiring, `tests/api/test_skins.py`).
+- Living maps / `api-contracts.md` updated to match code.
+- **No full human test pass yet** (API tests + light browser smoke only). Behavior looks good enough to **advance** to other work; do **not** remove this plan file or mark it shipped until a fuller human check.
+- Remaining product gaps still out of scope here: storefront, law packs, `CardAsset*` rows, auto-equip defaults.
 
 ## Goal
 
@@ -47,15 +54,16 @@ Skins become collectible / owned, not only one whole-table `card_skin`. Role and
 
 ## Acceptance criteria
 
-- [ ] Seeded packs `default` and `party` exist; registered users own both (`UserSkinPacks`).
-- [ ] User cannot equip a pack they do not own (`403`/`400`).
-- [ ] `GET` profile (or dedicated endpoints) returns owned packs + current Hitler/role equip.
-- [ ] Two different accounts at an online table can show different Hitler and/or role art for their seats.
-- [ ] Law cards still follow the **table preset** only.
-- [ ] Guests unchanged: no ownership API; client table skin only.
-- [ ] Image bytes not stored in SQLite.
-- [ ] Auth layering preserved; new persistence goes through a repository module.
-- [ ] Tests cover ownership grant, equip deny, and at least one happy-path equip + `/me` (or equivalent) shape.
+- [x] Seeded packs `default` and `party` exist; registered users own both (`UserSkinPacks`).
+- [x] User cannot equip a pack they do not own (`403`/`400`).
+- [x] `GET` profile (or dedicated endpoints) returns owned packs + current Hitler/role equip. → `GET /api/skins/me`
+- [x] Two different accounts at an online table can show different Hitler and/or role art for their seats. → covered by API seat-equip test + client wiring; **full multi-device human play not done**
+- [x] Law cards still follow the **table preset** only.
+- [x] Guests unchanged: no ownership API; client table skin only.
+- [x] Image bytes not stored in SQLite.
+- [x] Auth layering preserved; new persistence goes through a repository module.
+- [x] Tests cover ownership grant, equip deny, and at least one happy-path equip + `/me` (or equivalent) shape.
+- [ ] **Full human test pass** (account equip UX, shared-device name match, online two-player different art end-to-end) — **not done**; see status note above.
 
 ## Data contract (minimum)
 
@@ -111,6 +119,6 @@ Exact path names flexible if Router stays clear; prefer **`id`** in JSON, not fo
 
 ## Notes for implementers
 
-- Today: whole-table `card_skin` on `User` + `cardAssets.ts` packs `default` \| `party`.
-- Living maps may still describe table-only skins — Documentation Agent updates after ship.
+- Shipped shape: `/api/skins/packs`, `/api/skins/me`, `/api/skins/equip`, `/api/skins/games/{id}/seats`; `User.card_skin` unchanged as table preset; pack DB column `code`.
+- Living maps updated for current code. Close this plan only after fuller human verification.
 - Google OAuth / hybrid table-phone remain `06` / `05`.

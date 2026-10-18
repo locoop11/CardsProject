@@ -3,12 +3,17 @@
 import type {
   ActionResponse,
   CreateGameResponse,
+  EquipRequest,
   HandResponse,
   LoginRequest,
   PublicView,
   RegisterRequest,
   RoleRevealPlayer,
   Room,
+  SeatEquipsResponse,
+  SkinEquip,
+  SkinPack,
+  SkinProfile,
   StartRoomResponse,
   UpdateProfileRequest,
   User,
@@ -159,6 +164,27 @@ export function updateMe(body: UpdateProfileRequest): Promise<User> {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
+}
+
+export function getSkinPacks(): Promise<SkinPack[]> {
+  return request<SkinPack[]>('/api/skins/packs')
+}
+
+export function getSkinMe(): Promise<SkinProfile> {
+  return request<SkinProfile>('/api/skins/me')
+}
+
+export function equipSkins(body: EquipRequest): Promise<SkinEquip> {
+  return request<SkinEquip>('/api/skins/equip', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export function getSeatEquips(gameId: string): Promise<SeatEquipsResponse> {
+  return request<SeatEquipsResponse>(
+    `/api/skins/games/${encodeURIComponent(gameId)}/seats`,
+  )
 }
 
 export function createRoom(playerCount: number): Promise<Room> {

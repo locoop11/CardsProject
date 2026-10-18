@@ -154,8 +154,13 @@ export function TableBoard({
         same = communistIndex.n
         communistIndex.n += 1
       }
-      const skin = resolvePlayerCardSkin(player.cardSkin, cardSkin)
-      roleSrcById.set(player.id, resolveRole(skin, role, same))
+      const roleSkin = player.roleSkin ?? resolvePlayerCardSkin(player.cardSkin, cardSkin)
+      const hitlerSkin =
+        player.hitlerSkin ?? resolvePlayerCardSkin(player.cardSkin, cardSkin)
+      roleSrcById.set(
+        player.id,
+        resolveRole(roleSkin, role, same, hitlerSkin),
+      )
     }
   }
   return (
@@ -330,13 +335,19 @@ export function TableBoard({
                       : 'Role (hidden)'
                   }
                 >
-                  {/* Pass-and-play: seat shows table (or seat) skin back, then
-                      face on reveal via resolveRole / resolveHitler. */}
+                  {/* Backs stay on the table preset. Faces use per-seat
+                      Hitler/role packs when those seats have them. */}
                   {revealRoles && roleSrcById.has(player.id) ? (
                     <PlayingCardFace
                       color="black"
                       number={1}
-                      skin={resolvePlayerCardSkin(player.cardSkin, cardSkin)}
+                      skin={
+                        player.role === 'hitler'
+                          ? (player.hitlerSkin ??
+                            resolvePlayerCardSkin(player.cardSkin, cardSkin))
+                          : (player.roleSkin ??
+                            resolvePlayerCardSkin(player.cardSkin, cardSkin))
+                      }
                       src={roleSrcById.get(player.id)}
                       alt={
                         player.role ? `${roleLabel(player.role)} role card` : 'Role'
@@ -347,7 +358,7 @@ export function TableBoard({
                       color="black"
                       number={1}
                       faceDown
-                      skin={resolvePlayerCardSkin(player.cardSkin, cardSkin)}
+                      skin={cardSkin}
                     />
                   )}
                 </div>

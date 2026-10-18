@@ -100,6 +100,43 @@ export type UpdateProfileRequest = {
   card_skin?: string
 }
 
+export type SkinPack = {
+  id: string
+  code: string
+  title: string
+  description: string | null
+}
+
+export type SkinEquip = {
+  hitler_pack_id: string | null
+  role_pack_id: string | null
+  hitler_pack_code: string | null
+  role_pack_code: string | null
+}
+
+export type SkinProfile = {
+  owned_packs: SkinPack[]
+  equip: SkinEquip
+}
+
+export type EquipRequest = {
+  hitler_pack_id?: string
+  role_pack_id?: string
+}
+
+/** Bound-game seat art. No role or ownership fields. */
+export type SeatEquip = {
+  player_id: string
+  hitler_pack_id: string | null
+  hitler_pack_code: string | null
+  role_pack_id: string | null
+  role_pack_code: string | null
+}
+
+export type SeatEquipsResponse = {
+  seats: SeatEquip[]
+}
+
 /** Multi-device lobby (ephemeral rooms). */
 export type RoomSeat = {
   seat_index: number
