@@ -6,10 +6,11 @@
 
 - **v1 — pass-and-play:** one shared device; the group passes the phone for private roles and acts.
 - **v2 — multi-device:** each player on their own device in a room; each sees only their own secrets until the game ends.
+- **v3 — hybrid:** same as v2 for phones, plus an optional shared **table display** that shows only the public board (laws, phase, offices). All secret actions stay on personal phones.
 
 The product shell is **login-first**:
 
-- Signed-in players use a **Games hub** (v1 and v2).
+- Signed-in players use a **Games hub** (v1, v2, and v3).
 - **Play as guest** is explicit and opens **v1 only**.
 - Guests are not stored as users. No silent anonymous entry into play.
 
@@ -23,9 +24,10 @@ The product shell is **login-first**:
 | **Guest** | Explicit no-account mode; v1 only |
 | **Games hub** | Signed-in landing place listing available modes |
 | **Room** | Multi-device lobby with a join code until the host starts |
-| **Join code** | Short code others use to enter the host’s room |
+| **Join code** | Short code others use to enter the host’s room (players or table display) |
 | **Seat claim** | Binding an account to a lobby seat before start |
 | **Bound seat** | After start: that account may act/see only as that `player_id` |
+| **Table display** | Authenticated projector for the public board — **not** a seat; no private roles/hands/actions |
 | **Team** | `communist` or `fascist` |
 | **Role** | `communist`, `fascist`, or `hitler` (Hitler on fascist team) |
 | **President** | Rotating office; nominates chancellor |
@@ -47,15 +49,16 @@ The product shell is **login-first**:
 |-------|--------|
 | Unauthenticated visitor | Login / register; Play as guest |
 | Guest | Secret Cards v1 only; leave → Login |
-| Signed-in account | Games hub; Account (display name + Hitler/role equip); v1 with saved table skin; **v2** host/join/claim/play |
+| Signed-in account | Games hub; Account (display name + Hitler/role equip); v1 with saved table skin; **v2** host/join/claim/play; **v3** same plus attach a table display device |
 
 ---
 
 ## Multi-device secrecy (product)
 
-- Mid-game, each player may know **only their own** role/team (and their legislative hand when they are the office holder).
+- Mid-game, each **player** may know **only their own** role/team (and their legislative hand when they are the office holder).
 - Co-players must not read another seat’s role or hand by guessing ids.
-- At `game_over`, the table may reveal all roles (intentional flip).
+- A **table display** may show the public board only — never other players’ roles or hands.
+- At `game_over`, player devices may reveal all roles (intentional flip); the table projector still does not fetch private role cards mid-game.
 - Pass-and-play remains a separate trusted-device path with full create-time role reveal.
 
 ---

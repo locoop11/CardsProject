@@ -4,20 +4,21 @@
 
 `App.tsx` owns top-level **step** state (not React Router):
 
-`login` → (`gamesHub` | `account` when signed in) → (`settings` for v1 | `onlineLobby` for v2) → (`roleReveal` v1 only) → `nomination` ↔ `legislative` → `win`
+`login` → (`gamesHub` | `account` when signed in) → (`settings` for v1 | `onlineLobby` for v2/v3 | `tableDisplay` for v3 table) → (`roleReveal` v1 only) → `nomination` ↔ `legislative` → `win`
 
 Boot: `loadMe()` → if session, `playMode=account` and step `gamesHub`, then load `GET /api/skins/me` for Hitler/role equip; else step `login`. Non-401 `/me` failure → login with warning; guest still available.
 
-**Play mode** (`guest` | `account`) is frontend-only. Guests cannot open Games hub or v2.
+**Play mode** (`guest` | `account`) is frontend-only. Guests cannot open Games hub, v2, or v3.
 
 Within `settings` (v1 only), panel sub-state:
 
 `hub` | `names` | `skin`
 
 - Leaving v1 settings: account → Games hub; guest → Login.
-- v2: Games hub → `onlineLobby` (host/join/claim/start) → online gameplay (no shared `roleReveal` step).
-- Whole-table `cardSkin`: accounts seed from `user.card_skin` and PATCH on change; guests client-only. Laws and card backs always use this preset.
-- Per-player Hitler/role: signed-in equip from Account (`/api/skins/*`). Pass-and-play applies that art only to seats whose typed name matches the account display name; other seats use the table preset. Online: `GET /api/skins/games/{gameId}/seats` → per-seat art on the session.
+- v2: Games hub → `onlineLobby` (`allowTableDisplay=false`) → bound player gameplay.
+- v3: Games hub → `onlineLobby` (`allowTableDisplay=true`) → player path same as v2 **or** table path → `tableDisplay`.
+- Whole-table `cardSkin`: accounts seed from `user.card_skin` and PATCH on change; guests client-only. Laws and card backs always use this preset (including table projector).
+- Per-player Hitler/role: signed-in equip from Account (`/api/skins/*`). Pass-and-play applies that art only to seats whose typed name matches the account display name; other seats use the table preset. Online players: `GET /api/skins/games/{gameId}/seats` → per-seat art. Table display never loads roles/equips for secrets.
 
 ---
 
@@ -26,9 +27,10 @@ Within `settings` (v1 only), panel sub-state:
 | Screen | Responsibility |
 |--------|----------------|
 | `LoginScreen` | First page: login / register + **Play as guest** |
-| `GamesHubScreen` | Signed-in catalog (v1 + v2 available); open Account |
+| `GamesHubScreen` | Signed-in catalog (v1 + v2 + v3 available); open Account |
 | `AccountScreen` | Display name PATCH; Hitler/role equip from owned packs; logout → login |
-| `OnlineLobbyScreen` | Host create / join by code / claim seats / host start |
+| `OnlineLobbyScreen` | Host create / join by code / claim seats / host start; v3 adds player vs **table** device role |
+| `TableDisplayScreen` | v3 public projector: poll `GET /games/{id}` only; no roles/hands/actions |
 | `SettingsHubScreen` (`SettingsScreen.tsx`) | v1 pre-game hub: count, Names/Skin, start |
 | `NamesScreen` | Enter names; blanks → `Player N` |
 | `SkinScreen` | Whole-table pack (`default` \| `party`); signed-in copy notes laws/backs + unequipped seats |
@@ -46,7 +48,8 @@ Within `settings` (v1 only), panel sub-state:
 ### Global (in `App`)
 
 - `playMode`, `user`, `authStatus`, `authWarning`
-- `onlinePlay` (`gameId`, `selfPlayerId`, `roomId`) when in v2
+- `onlinePlay` (`gameId`, `selfPlayerId`, `roomId`) when in v2/v3 **player** path
+- `onlineLobbyKind` (`v2` \| `v3`); `tableDisplay` (`roomId`, `gameId`, `view`) when projecting
 - `playerCount`, `names`, `cardSkin`, `hitlerSkin`, `roleSkin`, `seatArt`, `settingsPanel`
 - `roleReveal` (v1), `session`, `chancellorId`, `win`, `busy`, `error`, `skinError`
 - `legislativeKey` — remount legislative each government
@@ -72,7 +75,8 @@ v2: own role from authorized `GET .../role/{self}` only; seat art from skins sea
 
 - **NominationScreen:** pass-and-play timer path **or** online self-vote + ~1.5s poll; bound president can force resolve
 - **LegislativeScreen:** online waiters poll; only office holder acts
-- **OnlineLobbyScreen:** create/join/claim/poll room until `game_id` set
+- **OnlineLobbyScreen:** create/join/claim/poll room until `game_id` set; v3 may attach as table (`LobbyDeviceRole`)
+- **TableDisplayScreen:** ~1.5s public-view poll only
 
 ---
 
@@ -83,7 +87,7 @@ v2: own role from authorized `GET .../role/{self}` only; seat art from skins sea
 | `api/client.ts` | `credentials: 'include'`; game + auth + room + skins helpers; `ApiError` |
 | `api/types.ts` | DTOs (`PublicView`, `User`, `Room`, `SkinProfile`, `SeatEquipsResponse`, …) |
 | `auth.ts` | `loadMe()` — user or `null` on 401 |
-| `gameCatalog.ts` | `secret-cards-v1` + `secret-cards-v2` both `available: true` |
+| `gameCatalog.ts` | `secret-cards-v1`, `secret-cards-v2`, `secret-cards-v3` all `available: true` |
 
 Vite proxies `/api` and `/health` to port 8000.
 

@@ -12,6 +12,7 @@ from api.schemas import (
     ClaimSeatRequest,
     CreateRoomRequest,
     JoinRoomRequest,
+    JoinTableRequest,
     PublicViewOut,
     RoomOut,
     RoomSeatOut,
@@ -35,6 +36,7 @@ def _room_out(room: Room) -> RoomOut:
                 display_name=claim.display_name if claim else None,
             )
         )
+    table_count = len(room.table_display_user_ids)
     return RoomOut(
         room_id=room.room_id,
         join_code=room.join_code,
@@ -42,6 +44,8 @@ def _room_out(room: Room) -> RoomOut:
         player_count=room.player_count,
         game_id=room.game_id,
         seats=seats,
+        table_attached=table_count > 0,
+        table_display_count=table_count,
     )
 
 
@@ -79,6 +83,49 @@ def join_room_route(
     except (
         rooms_service.RoomInputError,
         rooms_service.RoomNotFoundError,
+    ) as exc:
+        raise _map_room_error(exc) from exc
+    return _room_out(room)
+
+
+@router.post("/join-table", response_model=RoomOut)
+def join_table_route(
+    body: JoinTableRequest,
+    user: UserRecord = Depends(require_user),
+) -> RoomOut:
+    """Attach as table display by code — no seat; allowed after start."""
+    try:
+        room = rooms_service.attach_table_display_by_code(user, body.code)
+    except (
+        rooms_service.RoomInputError,
+        rooms_service.RoomNotFoundError,
+    ) as exc:
+        raise _map_room_error(exc) from exc
+    return _room_out(room)
+
+
+@router.post("/{room_id}/table", response_model=RoomOut)
+def attach_table_route(
+    room_id: str,
+    user: UserRecord = Depends(require_user),
+) -> RoomOut:
+    try:
+        room = rooms_service.attach_table_display(user, room_id)
+    except rooms_service.RoomNotFoundError as exc:
+        raise _map_room_error(exc) from exc
+    return _room_out(room)
+
+
+@router.delete("/{room_id}/table", response_model=RoomOut)
+def detach_table_route(
+    room_id: str,
+    user: UserRecord = Depends(require_user),
+) -> RoomOut:
+    try:
+        room = rooms_service.detach_table_display(user, room_id)
+    except (
+        rooms_service.RoomNotFoundError,
+        rooms_service.RoomForbiddenError,
     ) as exc:
         raise _map_room_error(exc) from exc
     return _room_out(room)

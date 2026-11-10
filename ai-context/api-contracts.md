@@ -191,13 +191,15 @@ Returns non-sensitive equipped pack ids/codes per seat so clients can render oth
 
 All room routes require a valid session cookie.
 
+**Table display:** optional authenticated clients that project the public board. They are **not** seats, do not appear in `user_id_by_player_id`, and may attach before or after the host starts. Player join (`POST /join`) is still blocked after start; table join is not.
+
 ### `POST /api/rooms`
 
 Host creates a lobby.
 
 **Body:** `{ "player_count": 5 }` — 5–10.
 
-**Response `201` — `RoomOut`** (host is a member; seats empty until claimed).
+**Response `201` — `RoomOut`** (host is a member; seats empty until claimed; `table_attached: false`).
 
 **Errors:** `400` unsupported count; `401` unauthenticated.
 
@@ -205,11 +207,45 @@ Host creates a lobby.
 
 ### `POST /api/rooms/join`
 
+Join as a **player** (member only until a seat is claimed).
+
 **Body:** `{ "code": "ABC123" }` — case-insensitive; stored uppercase.
 
 **Response `200` — `RoomOut`**
 
 **Errors:** `400` empty code / game already started; `401`; `404` unknown code.
+
+---
+
+### `POST /api/rooms/join-table`
+
+Attach as **table display** by join code (no seat). Allowed **before or after** start.
+
+**Body:** `{ "code": "ABC123" }`
+
+**Response `200` — `RoomOut`** (`table_attached: true`; caller added to members + table displays)
+
+**Errors:** `400` empty code; `401`; `404` unknown code.
+
+---
+
+### `POST /api/rooms/{room_id}/table`
+
+Attach as table display by room id (session required). No seat. Allowed before or after start.
+
+**Response `200` — `RoomOut`**
+
+**Errors:** `401`; `404` unknown room.
+
+---
+
+### `DELETE /api/rooms/{room_id}/table`
+
+Detach table-display flag for the caller. Membership is kept if the user also has a seat (or is otherwise a member).
+
+**Response `200` — `RoomOut`**
+
+**Errors:** `401`; `403` not a member; `404`.
 
 ---
 
@@ -229,11 +265,13 @@ Host creates a lobby.
 
 **Errors:** `400` invalid index / already claimed another seat / game started; `401`; `403` not member; `404`; `409` seat taken by another user.
 
+Table attach does **not** fill a seat. Host start still requires every seat claimed by distinct users.
+
 ---
 
 ### `POST /api/rooms/{room_id}/start`
 
-Host only. Every seat must be claimed by a **distinct** user.
+Host only. Every seat must be claimed by a **distinct** user. Table displays are ignored for this check.
 
 **Body:** `{ "seed"? }` — optional RNG seed for tests.
 
@@ -244,7 +282,7 @@ Host only. Every seat must be claimed by a **distinct** user.
 | `game_id` | New bound game session |
 | `view` | `PublicView` only — **no** `role_reveal` |
 
-Creates engine state, sets `user_id_by_player_id` bindings, sets `room.game_id`.
+Creates engine state, sets `user_id_by_player_id` bindings (seat claimants only), sets `room.game_id`.
 
 **Errors:** `400` seats incomplete / already started; `401`; `403` not host / not member; `404`.
 
@@ -432,9 +470,13 @@ Any field may be `null` when that slot is unequipped.
   "host_user_id": "…",
   "player_count": 5,
   "game_id": null,
-  "seats": [ /* RoomSeatOut × player_count */ ]
+  "seats": [ /* RoomSeatOut × player_count */ ],
+  "table_attached": false,
+  "table_display_count": 0
 }
 ```
+
+`table_attached` is true when `table_display_count > 0`. Does not list table user ids (no secrets / no identity dump).
 
 ### `StartRoomResponse`
 

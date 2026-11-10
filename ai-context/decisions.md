@@ -38,13 +38,13 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ---
 
-## Login-first shell; guest → v1 only; accounts get hub + v2
+## Login-first shell; guest → v1 only; accounts get hub + v2/v3
 
-**Chosen:** Cold start is Login (or Games hub if cookied). **Play as guest** → v1 only. Signed-in users get Games hub with **v1 and v2**. Logout → Login. Guest is frontend `playMode` only.
+**Chosen:** Cold start is Login (or Games hub if cookied). **Play as guest** → v1 only. Signed-in users get Games hub with **v1, v2, and v3**. Logout → Login. Guest is frontend `playMode` only.
 
 **Why:** Identity-ready product without blocking casual local play.
 
-**Rejected:** Silent anonymous entry; giving guests the hub or online lobby.
+**Rejected:** Silent anonymous entry; giving guests the hub or online/hybrid lobby.
 
 ---
 
@@ -67,6 +67,18 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 **Why:** Enough to prove multi-device play without durable lobby DB.
 
 **Tradeoff:** Restart clears lobbies; single process only.
+
+---
+
+## Hybrid table display (v3) — public projector, not a seat
+
+**Chosen:** Optional authenticated **table display** clients on a room (`table_display_user_ids`). Join via `POST /api/rooms/join-table` (by code, allowed after start) or `POST /api/rooms/{id}/table`. No seat claim; not in `user_id_by_player_id`. UI: Games hub v3 → lobby device role `table` → `TableDisplayScreen` (poll public view only). All nominate/vote/legislate/resolve stay on bound player phones.
+
+**Why:** Shared TV/tablet board without a second privacy model; reuse Option A rooms.
+
+**Rejected:** Table-as-actor; counting table attach as a seat for start; giving table clients role/hand access; “grab shared phone for a scene” (out of scope for this MVP).
+
+**Status:** In code + `tests/api/test_table_display.py`. Plan `05` kept open until human verify. See `plans/05-hybrid-table-phone-local.md`.
 
 ---
 
@@ -126,9 +138,9 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 
 ## Frontend step machine, not router
 
-**Chosen:** `App` step union (login / hub / account / v1 settings / online lobby / gameplay).
+**Chosen:** `App` step union (login / hub / account / v1 settings / online lobby / table display / gameplay).
 
-**Why:** Linear flows for local and online without URL/deep-link complexity yet.
+**Why:** Linear flows for local, online, and hybrid without URL/deep-link complexity yet.
 
 ---
 
@@ -174,6 +186,8 @@ Settled design choices visible in the current codebase. Prefer these over re-lit
 - Assuming games/rooms survive API restart or work across multiple Uvicorn workers.
 - Locking **local** `/api/games*` behind auth (breaks guest v1 and game tests).
 - Letting bound callers read or act as another seat (must be `403`).
+- Giving table-display clients roles, hands, or actor mutations.
+- Treating table attach as filling a lobby seat for host start.
 - Sending UI-rotated seat order to the API as authority.
 - Changing votes after cast without an explicit product decision.
 - Silent anonymous entry into gameplay.

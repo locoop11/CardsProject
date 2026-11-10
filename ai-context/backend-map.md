@@ -120,10 +120,10 @@ Ephemeral lobby. Layered: **routes → service → store** (in-memory; no SQL).
 | Module | Responsibility |
 |--------|----------------|
 | `routes.py` | `/api/rooms*`; session required; map domain errors → HTTP |
-| `service.py` | Create/join/claim/start rules; build bound `GameSession` on start |
-| `store.py` | `Room`, `SeatClaim`, `RoomStore` by `room_id` / join code |
+| `service.py` | Create/join/claim/start; table-display attach/detach/by-code; build bound `GameSession` on start |
+| `store.py` | `Room` (incl. `table_display_user_ids`), `SeatClaim`, `RoomStore` by `room_id` / join code |
 
-On start: placeholder names preserve claim↔seat through shuffle; then rewrite display names and attach `player_id → user_id` bindings. Response has **no** `role_reveal`.
+On start: placeholder names preserve claim↔seat through shuffle; then rewrite display names and attach `player_id → user_id` bindings (**seat claimants only**). Response has **no** `role_reveal`. Table-display users are members but not bound seats.
 
 ---
 
@@ -137,6 +137,7 @@ On start: placeholder names preserve claim↔seat through shuffle; then rewrite 
 | `tests/api/test_auth.py` | Auth cookies + guest game path |
 | `tests/api/test_skins.py` | Pack grant, equip deny/happy path, `/skins/me`, bound seat equips |
 | `tests/api/test_rooms.py` | Lobby create/join/claim/start |
+| `tests/api/test_table_display.py` | Table attach/detach; public view OK; role/hand/actors denied; join-table after start |
 | `tests/api/test_privacy_option_a.py` | Bound seat denial / hand / actors |
 | `tests/api/test_session_bindings.py` | Binding helpers on `GameSession` |
 | `tests/frontend/test_seat_layout.py` | `rotatePlayersForViewer` (Python port / mirror) |

@@ -30,10 +30,14 @@ import { LegislativeScreen } from './screens/LegislativeScreen'
 import { LoginScreen } from './screens/LoginScreen'
 import { NamesScreen } from './screens/NamesScreen'
 import { NominationScreen } from './screens/NominationScreen'
-import { OnlineLobbyScreen } from './screens/OnlineLobbyScreen'
+import {
+  OnlineLobbyScreen,
+  type LobbyDeviceRole,
+} from './screens/OnlineLobbyScreen'
 import { RoleRevealScreen } from './screens/RoleRevealScreen'
 import { SettingsHubScreen } from './screens/SettingsScreen'
 import { SkinScreen } from './screens/SkinScreen'
+import { TableDisplayScreen } from './screens/TableDisplayScreen'
 import { WinScreen } from './screens/WinScreen'
 import './App.css'
 
@@ -42,11 +46,14 @@ type Step =
   | 'gamesHub'
   | 'account'
   | 'onlineLobby'
+  | 'tableDisplay'
   | 'settings'
   | 'roleReveal'
   | 'nomination'
   | 'legislative'
   | 'win'
+
+type OnlineLobbyKind = 'v2' | 'v3'
 
 type SettingsPanel = 'hub' | 'names' | 'skin'
 
@@ -78,8 +85,14 @@ export default function App() {
   const [skinError, setSkinError] = useState<string | null>(null)
   const [authStatus, setAuthStatus] = useState<'loading' | 'ready'>('loading')
   const [authWarning, setAuthWarning] = useState<string | null>(null)
-  /** Set for multi-device v2; null for local pass-and-play. */
+  /** Set for multi-device v2/v3 player path; null for local pass-and-play. */
   const [onlinePlay, setOnlinePlay] = useState<OnlinePlay | null>(null)
+  const [onlineLobbyKind, setOnlineLobbyKind] = useState<OnlineLobbyKind>('v2')
+  const [tableDisplay, setTableDisplay] = useState<{
+    roomId: string
+    gameId: string
+    view: PublicView
+  } | null>(null)
 
   const applyUser = useCallback((next: User | null) => {
     setUser(next)
@@ -278,19 +291,38 @@ export default function App() {
       enterAccountV1()
       return
     }
-    if (gameId === 'secret-cards-v2') {
+    if (gameId === 'secret-cards-v2' || gameId === 'secret-cards-v3') {
       if (!user || playMode !== 'account') return
       setError(null)
       setOnlinePlay(null)
+      setTableDisplay(null)
+      setOnlineLobbyKind(gameId === 'secret-cards-v3' ? 'v3' : 'v2')
       setStep('onlineLobby')
     }
+  }
+
+  function enterTableDisplay(payload: {
+    roomId: string
+    gameId: string
+    view: PublicView
+  }) {
+    setOnlinePlay(null)
+    setRoleReveal([])
+    setTableDisplay(payload)
+    setSession(sessionFromView(payload.view))
+    setStep('tableDisplay')
   }
 
   async function enterOnlineGame(payload: {
     roomId: string
     gameId: string
     view: PublicView
+    deviceRole: LobbyDeviceRole
   }) {
+    if (payload.deviceRole === 'table') {
+      enterTableDisplay(payload)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -309,6 +341,7 @@ export default function App() {
       } catch {
         // Table preset covers seats when equip cannot be loaded.
       }
+      setTableDisplay(null)
       setOnlinePlay({
         gameId: payload.gameId,
         selfPlayerId,
@@ -327,7 +360,7 @@ export default function App() {
   }
 
   async function leaveOnlineToHub() {
-    if (session?.gameId) {
+    if (session?.gameId && !tableDisplay) {
       try {
         await deleteGame(session.gameId)
       } catch {
@@ -335,12 +368,31 @@ export default function App() {
       }
     }
     setOnlinePlay(null)
+    setTableDisplay(null)
     setRoleReveal([])
     setSession(null)
     setChancellorId(null)
     setWin(null)
     setError(null)
     setStep('gamesHub')
+  }
+
+  function leaveTableToHub() {
+    setTableDisplay(null)
+    setSession(null)
+    setError(null)
+    setStep('gamesHub')
+  }
+
+  if (step === 'tableDisplay' && tableDisplay) {
+    return (
+      <TableDisplayScreen
+        gameId={tableDisplay.gameId}
+        initialView={tableDisplay.view}
+        cardSkin={cardSkin}
+        onLeave={leaveTableToHub}
+      />
+    )
   }
 
   if (step === 'win' && session && win) {
@@ -420,9 +472,11 @@ export default function App() {
     return (
       <OnlineLobbyScreen
         user={user}
+        allowTableDisplay={onlineLobbyKind === 'v3'}
         onBack={() => {
           setError(null)
           setOnlinePlay(null)
+          setTableDisplay(null)
           setStep('gamesHub')
         }}
         onGameStarted={(payload) => void enterOnlineGame(payload)}

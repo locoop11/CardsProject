@@ -99,28 +99,28 @@ Ready plans include a **Developer starting point**: suggested order, files to cr
 | File | Concern | Status |
 |------|---------|--------|
 | `00-data-entities.md` | **Reference:** what we store, tiers A–D, field-level entities | locked catalog (not a build ticket) |
-| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs + equip | **implemented — not fully completed** (no full human test yet; seems good to advance) |
-| `05-hybrid-table-phone-local.md` | v3 hybrid table phone + personal phones | proposed — deferred |
-| `06-google-oauth.md` | Google / social login | proposed — **last** |
+| `04-per-player-owned-skins.md` | Per-player owned Hitler/role packs + equip | **implemented — not fully completed** (human verify pending) |
+| `06-google-oauth.md` | Google / social login | **ready — next** |
 | `99-out-of-scope.md` | Explicit v1 non-goals | n/a |
 
-**Shipped / removed from queue** (living truth in sibling `ai-context/*.md` — Documentation Agent may still need to refresh maps if they lag code):
+**Shipped / removed from queue** (living truth in sibling `ai-context/*.md`):
 
 | Removed plan | Shipped in code |
 |--------------|-----------------|
 | `01-accounts-auth.md` | Login-first shell, guest→v1, Games hub, SQLite accounts + layered `api/auth/` |
-| `02-seat-layout-anchor.md` | Mid-bottom seats, `seatLayout.ts` / `rotatePlayersForViewer`, `tests/frontend/test_seat_layout.py` |
-| `03-multi-device-privacy.md` | Rooms lobby, seat bindings, Option A authz, online UI + `tests/api/test_rooms.py` / `test_privacy_option_a.py` |
+| `02-seat-layout-anchor.md` | Mid-bottom seats + viewer rotation |
+| `03-multi-device-privacy.md` | Rooms, Option A authz, online play |
+| `05-hybrid-table-phone-local.md` | Table display + hub v3 hybrid |
 
 **In code but plan file kept open** (do not treat as fully closed):
 
 | Plan | Notes |
 |------|-------|
-| `04-per-player-owned-skins.md` | API + UI landed; pytest + light browser smoke OK. **Not fully human-tested.** Living maps updated. OK to advance to other work; close/remove `04` only after a fuller human pass. |
+| `04-per-player-owned-skins.md` | API + UI landed. **Not fully human-tested.** Close/remove only after human pass. |
 
 **Superseded / removed:** `02-multi-device-privacy.md` (old privacy-theater plan). Do not revive.
 
-**Execute order (remaining):** finish human verification of `04` when convenient → then promote `05` / `06` when the human chooses. Advancing past `04` is allowed with the caveat above.
+**Execute order (remaining):** Developer builds **`06`**. Human verification of `04` can continue in parallel.
 
 ## Standing structure rule (platform, games, persistence)
 
@@ -142,7 +142,7 @@ This repo will host **more than one game**. Organize so shared shell and per-gam
 
 | Kind | Lives in | Examples |
 |------|----------|----------|
-| **Platform (shared)** | `api/auth/`, `api/skins/`, `api/db.py`, accounts, future shared lobby helpers; frontend shell (`Login`, `GamesHub`, account) | Identity, session cookies, skin ownership/equip, hub catalog |
+| **Platform (shared)** | `api/auth/`, `api/skins/`, `api/db.py`, accounts, rooms helpers; frontend shell (`Login`, `GamesHub`, account) | Identity, session cookies, skin ownership/equip, hub catalog |
 | **Game domain** | One Python package per game (today: `secret_cards/`) | Rules, phases, wins — never in FastAPI routes |
 | **Generic card primitives** | `cards/` only | Piles/tables; **no** game rules; reusable by every game |
 | **Game HTTP** | Dedicated router module per game (today: `api/routes.py` for Secret Cards) | Thin: validate → call engine → map errors → JSON |
@@ -153,10 +153,10 @@ This repo will host **more than one game**. Organize so shared shell and per-gam
 1. **New game = new domain package + its own HTTP router + its own UI flow** — do not stuff foreign rules into `secret_cards/`.
 2. **Hub is data-driven** (`gameCatalog` / equivalent): add a catalog entry; do not rewrite the app shell per game.
 3. **Auth and accounts are platform** — all games reuse the same session; guests remain a frontend mode unless a later plan changes that.
-4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer `/api/<game-id-or-name>/…` so namespaces stay clear.
+4. **Path naming (evolve carefully):** keep today’s `/api/games/*` for Secret Cards until a dedicated rename/migration plan; **new** games should prefer clear per-game prefixes.
 5. Ephemeral play state (games + rooms) stays in-memory (`api/session.py`, `api/rooms/`) until a plan requires durable history/DB.
 
-Auth, seat layout, and Option A rooms (shipped): see living maps / code. Second-game product work remains deferred (`99`) until explicitly planned — but **structure for it starts now**.
+Auth, skins, rooms, table display (shipped): see living maps / code. Second-game product work remains deferred (`99`) until explicitly planned.
 
 ## Current bug plans
 

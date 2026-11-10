@@ -152,6 +152,9 @@ export type Room = {
   player_count: number
   game_id: string | null
   seats: RoomSeat[]
+  /** True when at least one table-display client is attached. */
+  table_attached: boolean
+  table_display_count: number
 }
 
 export type StartRoomResponse = {

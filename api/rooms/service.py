@@ -97,6 +97,43 @@ def get_room(user: UserRecord, room_id: str) -> Room:
     return room
 
 
+def attach_table_display(user: UserRecord, room_id: str) -> Room:
+    """Mark the caller as a public table projector. Does not claim a seat.
+
+    Allowed before or after the host starts the game.
+    """
+    room = store.get(room_id)
+    if room is None:
+        raise RoomNotFoundError("Room not found")
+    room.member_user_ids.add(user.id)
+    room.table_display_user_ids.add(user.id)
+    return room
+
+
+def attach_table_display_by_code(user: UserRecord, code: str) -> Room:
+    """Join by code as table display (works even after the game has started)."""
+    normalized = (code or "").strip().upper()
+    if not normalized:
+        raise RoomInputError("Join code is required")
+    room = store.get_by_code(normalized)
+    if room is None:
+        raise RoomNotFoundError("Room not found")
+    room.member_user_ids.add(user.id)
+    room.table_display_user_ids.add(user.id)
+    return room
+
+
+def detach_table_display(user: UserRecord, room_id: str) -> Room:
+    """Remove table-display attachment. Membership is kept if the user has a seat."""
+    room = get_room(user, room_id)
+    room.table_display_user_ids.discard(user.id)
+    return room
+
+
+def is_table_display(room: Room, user_id: str) -> bool:
+    return user_id in room.table_display_user_ids
+
+
 def claim_seat(user: UserRecord, room_id: str, seat_index: int) -> Room:
     room = get_room(user, room_id)
     if room.game_id is not None:

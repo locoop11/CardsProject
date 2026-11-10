@@ -1,40 +1,99 @@
 # 06 — Google OAuth (and social login)
 
 **Kind:** feature  
-**Status:** proposed  
-**Depends on:** accounts auth (**shipped**); multi-device Option A (**shipped**) — prefer after identity-at-seat is already proven  
-**Priority:** last — after `04` / `05` unless human promotes earlier
+**Status:** ready  
+**Depends on:** accounts auth, rooms/Option A, skins, hybrid table display (**all shipped**)  
+**Priority:** next Developer task (last major auth convenience feature in the open queue)
 
 ## Goal
 
-Let users sign in or link accounts with **Google** (and optionally other providers later) using the same HTTP-only session cookie model as local auth in `01`.
+Let users **sign in or link** with **Google** using the same HttpOnly `session_id` cookie model as local username/email + password. Local password auth stays available.
 
 ## Why
 
-Convenience and fewer passwords for internet play. Explicitly deferred so v2 can ship on simple username/email + password first.
+Fewer passwords for internet / multi-device play. Deferred until local accounts and seat identity were proven.
 
-## In scope / out of scope (when promoted)
+## Product locks (this plan)
 
-**Likely in scope**
+| Topic | Lock |
+|-------|------|
+| **Providers** | **Google only** this plan. Apple/others later. |
+| **Session** | Same cookie `session_id` / SQLite `sessions` as local login. |
+| **New Google user** | Create `User` with `google_sub` set; `password_hash` nullable **or** random unusable hash — pick one approach and keep login-by-password working only when a real password exists. |
+| **Linking** | If Google email matches an existing local user’s **verified/normalized email**, **link** `google_sub` to that user after explicit consent **or** on first Google login when email matches (document which). **No silent takeover** of an account that already has a different `google_sub`. |
+| **Conflict** | Google `sub` already linked to another user → `409`. |
+| **`/me` shape** | Keep existing profile fields; may add optional `has_google: bool` or `auth_providers` — do not break skins equip fields. |
+| **UI** | Login + Account: “Continue with Google”; logout unchanged. |
+| **Guest** | Unchanged — no Google guest. |
+| **Secrets** | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / redirect URI via env; never commit secrets. |
 
-- `GET /api/auth/google/start` and callback.
-- Create user from Google profile or **link** `google_sub` to an existing local account (matching verified email).
-- Same session cookie as `01`; `/me` unchanged shape (may expose linked providers later).
+## In scope / out of scope
 
-**Out of scope until decided**
+**In scope**
 
-- Other IdPs (Apple, etc.) unless added to this plan when promoted.
-- Replacing local password auth.
+- OAuth start + callback routes under `/api/auth/google/…`.
+- Schema: durable Google subject on user (`google_sub` UNIQUE nullable) — **`id` PK unchanged**.
+- Service + repository layering (no SQL in routes).
+- Frontend Login/Account Google button; cookie session after success.
+- Tests: mock Google token exchange where possible; link / conflict / local password still works.
 
-## Acceptance criteria (placeholder)
+**Out of scope**
 
-- [ ] Google OAuth create/login sets the same session cookie as local login.
-- [ ] Linking to an existing local user is defined and tested (no silent account takeover).
-- [ ] Local username/email + password path remains available.
+- Apple / other IdPs.
+- Removing local password registration.
+- Changing rooms, skins, or table-display behavior.
+- Full account merge UI beyond email-match link rule above.
+
+## Acceptance criteria
+
+- [ ] Google OAuth success sets the same session cookie as local login; `/me` works.
+- [ ] New Google-only user can use hub / v2 / v3 like any account.
+- [ ] Linking rule is implemented and tested (no silent takeover when `google_sub` clashes).
+- [ ] Local username/email + password register/login still works.
+- [ ] Missing Google env config fails safely (clear 503/config error), not a crash loop.
+- [ ] No client exposure of `google_sub` secrets beyond what’s needed (prefer not putting raw sub in public profile unless useful).
+
+## Data contract (additions)
+
+| Method | Path | Auth | Notes | Success |
+|--------|------|------|-------|---------|
+| GET | `/api/auth/google/start` | none | Redirect to Google authorize URL (or JSON `{ "authorize_url" }` if SPA prefers) | `302` or `200` |
+| GET | `/api/auth/google/callback` | none | Code exchange; create/link user; set cookie; redirect to frontend | `302` + `Set-Cookie` |
+| GET | `/api/auth/me` | session | Existing profile (+ optional Google-linked flag) | `200` |
+
+Exact redirect URLs and frontend origin from env (`GOOGLE_REDIRECT_URI`, Vite origin).
+
+## Developer starting point
+
+**Suggested order:**
+
+1. `api/db.py`: add nullable unique `google_sub` (and allow null password if you choose that model); migrate existing DBs safely.
+2. Repository/service: find-by-google-sub, link, create-from-google; keep password login paths.
+3. Routes: start + callback; map errors to 400/409/503.
+4. Pytest with mocked Google responses.
+5. Frontend: LoginScreen + AccountScreen “Continue with Google”; handle redirect return.
+6. Document env vars in README or `docs/` briefly.
+
+**Do not touch:** `secret_cards/`, rooms authz, skins ownership rules (except `/me` additive fields).
+
+### Files likely to create / modify
+
+| Path | Purpose |
+|------|---------|
+| `api/auth/routes.py` / `service.py` / `repository.py` | Google start/callback + user link |
+| `api/db.py` / `api/schemas.py` | `google_sub`; optional me fields |
+| `tests/api/test_auth_google.py` (name flexible) | OAuth flows mocked |
+| `frontend/src/screens/LoginScreen.tsx` / `AccountScreen.tsx` | Google CTA |
+| `frontend/src/api/client.ts` | start URL helper if needed |
+| `.env.example` / README | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, redirect URI |
+
+### Direction notes
+
+- Prefer Authorization Code flow with server-side client secret.
+- State parameter CSRF protection on start/callback.
+- After callback, redirect to frontend hub/login with cookie already set (`SameSite=Lax` as today).
 
 ## Notes for implementers
 
-- Depends on shipped cookie sessions and user ids.
-- Seat-binding identity is already proven with local accounts (shipped rooms / Option A).
-- Likely touch: `api/auth/routes.py` (add Google), `api/db.py` (nullable `google_sub`), frontend Account UI “Continue with Google”; env `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
-- Full file map can be expanded when this plan is promoted to `ready`.
+- Living maps describe local auth today — Documentation Agent updates after ship.
+- Plans `04` / `05` are shipped/removed from queue; do not reopen them for OAuth work.

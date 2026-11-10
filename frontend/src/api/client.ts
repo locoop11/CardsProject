@@ -201,6 +201,25 @@ export function joinRoom(code: string): Promise<Room> {
   })
 }
 
+export function joinRoomAsTable(code: string): Promise<Room> {
+  return request<Room>('/api/rooms/join-table', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
+}
+
+export function attachTableDisplay(roomId: string): Promise<Room> {
+  return request<Room>(`/api/rooms/${encodeURIComponent(roomId)}/table`, {
+    method: 'POST',
+  })
+}
+
+export function detachTableDisplay(roomId: string): Promise<Room> {
+  return request<Room>(`/api/rooms/${encodeURIComponent(roomId)}/table`, {
+    method: 'DELETE',
+  })
+}
+
 export function getRoom(roomId: string): Promise<Room> {
   return request<Room>(`/api/rooms/${roomId}`)
 }

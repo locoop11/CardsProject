@@ -22,6 +22,8 @@ class Room:
     # seat_index → claim; missing / None = empty
     seats: dict[int, SeatClaim | None] = field(default_factory=dict)
     member_user_ids: set[str] = field(default_factory=set)
+    # Authenticated clients that project the public board only (not seats).
+    table_display_user_ids: set[str] = field(default_factory=set)
     game_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -29,6 +31,8 @@ class Room:
             self.seats = {i: None for i in range(self.player_count)}
         if self.host_user_id not in self.member_user_ids:
             self.member_user_ids = set(self.member_user_ids) | {self.host_user_id}
+        if not isinstance(self.table_display_user_ids, set):
+            self.table_display_user_ids = set(self.table_display_user_ids)
 
 
 @dataclass

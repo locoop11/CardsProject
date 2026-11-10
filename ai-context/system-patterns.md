@@ -30,14 +30,16 @@ Same rules as auth. Ownership and equip live here — not as a JSON list on `Use
 routes  →  service  →  store (in-memory)
 ```
 
-Same separation idea as auth, without SQL. Service owns lobby rules and bound-game creation; store owns dicts only.
+Same separation idea as auth, without SQL. Service owns lobby rules, table-display attach, and bound-game creation; store owns dicts only (`table_display_user_ids` separate from seats).
 
 ## Dual-mode game authz (Option A)
 
 - **Local session** (`user_id_by_player_id is None`): cookie-optional; trusted shared device.
 - **Bound session:** `require_user_if_bound` → cookie; then seat checks (`require_bound_seat` / president / chancellor).
+- **Table display:** authenticated room member with **no** seat binding — may poll public `GET /games/{id}`; role/hand/actors → `403` (unbound).
 - **`ActionResponse.hand`:** local may include office-phase hand; bound only for proven office-holder seat.
 - Do **not** add global middleware that locks all `/api/games*`.
+- Do **not** treat table attach as filling a seat for host start.
 
 ## Engine pattern
 
@@ -63,9 +65,10 @@ Same separation idea as auth, without SQL. Service owns lobby rules and bound-ga
 ## Frontend patterns
 
 - **Step machine in `App`**, not a router.
-- **Guest vs account** local `playMode`; guests never enter v2 lobby.
-- **Games hub** data-driven (`gameCatalog.ts`).
-- **Online:** poll public view (~1.5s); act only as `selfPlayerId`; resolve seat via probing role GET; load seat equips once when entering the game.
+- **Guest vs account** local `playMode`; guests never enter v2/v3 lobby.
+- **Games hub** data-driven (`gameCatalog.ts`) — v1 / v2 / v3 tiles.
+- **Online players:** poll public view (~1.5s); act only as `selfPlayerId`; resolve seat via probing role GET; load seat equips once when entering the game.
+- **Table display:** `TableDisplayScreen` polls public view only; never role/hand/actor calls; leave does not delete the game for seated players.
 - **Seat layout:** `rotatePlayersForViewer` is display-only — never send rotated order to the API.
 - **Whole-table `cardSkin`** in `App`; accounts PATCH `/me` (laws / backs / fallback).
 - **Hitler/role equip** via `/api/skins/*` on Account; guests have no ownership UI.
@@ -89,6 +92,7 @@ Same separation idea as auth, without SQL. Service owns lobby rules and bound-ga
 | Auth HTTP | `tests/api/test_auth.py` | Cookies + guest game path |
 | Skins HTTP | `tests/api/test_skins.py` | Grant, equip deny/happy path, seat equips |
 | Rooms / Option A | `tests/api/test_rooms.py`, `test_privacy_option_a.py`, `test_session_bindings.py` | Cross-user denial |
+| Table display (v3) | `tests/api/test_table_display.py` | Attach/detach; public OK; secrets denied |
 | Seat layout | `tests/frontend/test_seat_layout.py` | Rotation helper |
 | Frontend lint | oxlint via `npm run lint` | No full UI e2e suite yet |
 

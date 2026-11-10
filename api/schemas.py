@@ -134,6 +134,12 @@ class JoinRoomRequest(BaseModel):
     code: str
 
 
+class JoinTableRequest(BaseModel):
+    """Attach as public table display by join code (no seat)."""
+
+    code: str
+
+
 class ClaimSeatRequest(BaseModel):
     seat_index: int = Field(..., ge=0, le=9)
 
@@ -152,6 +158,8 @@ class RoomOut(BaseModel):
     player_count: int
     game_id: Optional[str] = None
     seats: list[RoomSeatOut]
+    table_attached: bool = False
+    table_display_count: int = 0
 
 
 class StartRoomRequest(BaseModel):

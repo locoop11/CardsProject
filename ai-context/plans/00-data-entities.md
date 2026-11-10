@@ -260,11 +260,11 @@ Later, live play can **mirror** into `GameInstance` + append `GameAction` withou
 
 | Phase | Plan | Entities |
 |-------|------|----------|
-| Done | `01`–`03` (removed) | `User`, `Session`; live `Room` + bound `GameSession`; seat UI helpers |
-| Cosmetics / ownership | `04` (in code; not fully closed) | Shipped: `SkinPack`, `UserSkinPacks`, `UserEquip` (hitler/role). Still TARGET: `CardAsset*`. Keep `User.card_skin` as table preset. |
-| Hybrid table-phone | `05` | no new durable entities required at plan time |
+| Done | `01`–`03`, `05` (removed) | `User`, `Session`; live `Room` + table display + bound `GameSession` |
+| In code, plan open | `04` | `SkinPack`, `UserSkinPacks`, `UserEquip` — human verify pending |
+| OAuth | `06` (**ready**) | `User.google_sub` (or equivalent link) |
 | History / analytics | **future numbered plan** | `GameInstance`, `GameParticipant`, `GameAction` (+ retention policy) |
-| OAuth | `06` | link field/table on `User` |
+| Still TARGET (not scheduled) | — | `CardAsset*` rows; retire `User.card_skin` into `UserEquip` table_preset |
 
 ---
 
@@ -272,7 +272,7 @@ Later, live play can **mirror** into `GameInstance` + append `GameAction` withou
 
 | Plan | Uses |
 |------|------|
-| `04` | Ownership & asset entities (`UserSkinPacks`, …) |
-| `05` | Reuses live Room / bound seats / bottom-anchor layout |
+| `04` | Ownership & equip (keep open until human verify) |
+| `06` | Google link on `User`; same `Session` cookie |
 | Future history plan | Part 2 play entities; retention/storage policy |
 | Second game | New domain package; reuse `User`, packs/assets, `GameInstance` → game product `id` |

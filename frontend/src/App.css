@@ -1578,6 +1578,16 @@ button.table-seat:disabled {
   text-align: center;
 }
 
+.table-display-footer {
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.table-display-footer .btn {
+  min-width: 10rem;
+}
+
 /* Win screen: full table with role cards face up + Play again */
 .screen.table-layout.win-screen {
   min-height: 100dvh;
